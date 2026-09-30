@@ -1,0 +1,7 @@
+{
+  "name": "SOCOTU Proforma Disbursement Account Manager",
+  "description": "Professional Proforma Disbursement Account (PDA) preparation, OMMP Tunisian port dues calculation, and maritime agency disbursement accounting for SOCOTU.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

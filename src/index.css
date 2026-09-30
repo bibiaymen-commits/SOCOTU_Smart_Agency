@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@media print {
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 5mm 6mm;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  #pda-printable-document,
+  #official-pda-print-area,
+  #arrival-declaration-print-area,
+  #sof-print-area,
+  #berthing-request-print-area {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  #berthing-request-print-area {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    break-after: avoid !important;
+    break-before: avoid !important;
+    max-height: 275mm !important;
+    overflow: hidden !important;
+  }
+}

@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOCOTU PDA Application — Version Autonome V8</title>
+    <style>
+        :root {
+            --primary-color: #0f2c59;
+            --secondary-color: #1d4ed8;
+            --accent-color: #f8fafc;
+            --border-color: #cbd5e1;
+            --text-main: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11px;
+            color: var(--text-main);
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 8px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 14px 18px;
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(15, 44, 89, 0.1);
+        }
+        
+        /* Centered Big Corporate Header */
+        .corporate-header {
+            text-align: center;
+            border-bottom: 2.5px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 8px;
+        }
+        .company-brand {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary-color);
+            letter-spacing: 1px;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+        .agency-subtitle {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-top: 2px;
+        }
+        .company-details {
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.3;
+            margin-top: 4px;
+        }
+
+        /* Sub-header below horizontal line */
+        .sub-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .doc-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .doc-date {
+            font-size: 11px;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 14px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 7px 12px;
+            margin-bottom: 8px;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+        }
+        .meta-label {
+            font-weight: 700;
+            color: var(--primary-color);
+            width: 115px;
+            flex-shrink: 0;
+            text-align: left;
+        }
+        .meta-value {
+            color: #334155;
+            flex-grow: 1;
+            text-align: left;
+        }
+        .meta-value input, .meta-value select {
+            width: 100%;
+            padding: 2px 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 11px;
+            background: #fff;
+            text-align: left;
+            font-family: inherit;
+            height: 22px;
+            box-sizing: border-box;
+        }
+
+        .vessel-particulars {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px 14px;
+        }
+        .particular-group {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .particular-group label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            width: 105px;
+            flex-shrink: 0;
+            text-align: left;
+            margin-right: 5px;
+        }
+        .particular-group input, .particular-group select {
+            width: 90px;
+            padding: 2px 5px;
+            border: 1px solid #93c5fd;
+            border-radius: 3px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            font-family: inherit;
+            background: #fff;
+            height: 22px;
+            box-sizing: border-box;
+        }
+        .particular-group input[readonly] {
+            background-color: #dbeafe;
+            color: #1e3a8a;
+        }
+        .volume-summary {
+            grid-column: span 3;
+            font-size: 10.5px;
+            color: #1e3a8a;
+            border-top: 1px dashed #bfdbfe;
+            padding-top: 5px;
+            margin-top: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .section-header {
+            background-color: var(--primary-color);
+            color: #fff;
+            text-align: left;
+            font-weight: 700;
+            padding: 4px 8px;
+            margin-top: 8px;
+            margin-bottom: 0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            background: #fff;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color);
+            padding: 3px 6px;
+            font-size: 10.5px;
+        }
+        .data-table th {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 10px;
+            text-align: center;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        
+        input.qty-input {
+            width: 35px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #fef9c3;
+            border: 1px solid #facc15;
+            border-radius: 3px;
+            padding: 2px;
+            font-size: 10.5px;
+            height: 20px;
+            box-sizing: border-box;
+        }
+        input.unit-price-input {
+            width: 80px;
+            text-align: left;
+            background-color: #fef9c3;
+            border: 1px solid #facc15;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-size: 10.5px;
+            font-weight: bold;
+            height: 20px;
+            box-sizing: border-box;
+        }
+
+        .footer-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 8px;
+        }
+        .footer-box {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 7px 10px;
+            font-size: 9.5px;
+            line-height: 1.35;
+        }
+        .footer-box strong {
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 2px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 2px;
+            font-size: 10px;
+        }
+
+        .page-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+            color: #64748b;
+            margin-top: 8px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 4px;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-print, .btn-save, .btn-download {
+            color: white;
+            padding: 7px 18px;
+            border: none;
+            border-radius: 4px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(15, 44, 89, 0.2);
+            transition: background 0.2s;
+        }
+        .btn-print {
+            background-color: var(--primary-color);
+        }
+        .btn-print:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-save {
+            background-color: #059669;
+        }
+        .btn-save:hover {
+            background-color: #047857;
+        }
+        .btn-download {
+            background-color: #d97706;
+        }
+        .btn-download:hover {
+            background-color: #b45309;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 5mm;
+            }
+            body {
+                background: #fff;
+                padding: 0;
+                font-size: 10px;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+                width: 100%;
+            }
+            .btn-container, #v6-topbar, #v6-dashboard, #v6-toast, #v7-services, .service-picker {
+                display: none !important;
+            }
+            input, select {
+                border: none !important;
+                background: transparent !important;
+                text-align: left !important;
+                box-shadow: none;
+                padding: 0;
+                font-size: 10px;
+                height: auto !important;
+            }
+            input.qty-input, input.unit-price-input {
+                background: transparent !important;
+                border: none !important;
+                text-align: center !important;
+            }
+        }
+
+        #v6-topbar{position:sticky;top:0;z-index:1000;background:#0f2c59;color:#fff;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 3px 10px rgba(0,0,0,0.15)}
+        #v6-topbar .brand{font-weight:800;letter-spacing:.4px}
+        #v6-topbar .status{font-size:10px;opacity:.9}
+        #v6-nav{display:flex;gap:6px;flex-wrap:wrap}
+        .v6-btn{border:0;border-radius:5px;padding:7px 11px;font-weight:700;cursor:pointer;background:#fff;color:#0f2c59;font-size:11px}
+        .v6-btn.primary{background:#2563eb;color:#fff}.v6-btn.green{background:#059669;color:#fff}.v6-btn.red{background:#dc2626;color:#fff}.v6-btn.gray{background:#e2e8f0;color:#334155}.v6-btn.amber{background:#f59e0b;color:#0f2c59;font-weight:800}
+        #v6-dashboard{display:none;max-width:1000px;margin:10px auto;background:#fff;border-radius:7px;padding:14px;box-shadow:0 5px 15px rgba(15,44,89,0.1)}
+        .v6-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.v6-card{border:1px solid #cbd5e1;border-radius:6px;padding:10px;background:#f8fafc}.v6-card b{display:block;font-size:18px;color:#0f2c59}.v6-card span{font-size:10px;color:#64748b}
+        #v6-history{margin-top:12px;width:100%;border-collapse:collapse}#v6-history th,#v6-history td{border:1px solid #cbd5e1;padding:5px;font-size:10px}#v6-history th{background:#f1f5f9;color:#0f2c59}
+        #v6-toast{position:fixed;right:18px;bottom:18px;background:#0f2c59;color:#fff;padding:9px 13px;border-radius:6px;display:none;z-index:2000;box-shadow:0 4px 12px rgba(0,0,0,0.25)}
+        @media(max-width:800px){.v6-cards{grid-template-columns:repeat(2,1fr)}}
+
+        #v7-services{margin-top:15px;background:#fff;padding:14px;border-radius:7px;border:1px solid #cbd5e1;box-shadow:0 2px 8px rgba(0,0,0,0.05);max-width:1000px;margin:15px auto;}
+        .v7bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+        .v7bar button{padding:6px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer;font-size:11px}
+        .v7grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:7px}
+        .v7item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #dbe3ec;border-radius:6px;background:#fff;cursor:pointer}
+        .v7item input{width:16px;height:16px}
+        .v7section{margin-top:10px;padding:10px;border:1px solid #dbe3ec;border-radius:7px;background:#f8fafc}
+        .v7section-title{font-weight:700;margin-bottom:8px;color:#0f2c59}
+        .v7select-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .v7select{min-width:280px;max-width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:11px}
+        .v7selected{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+        .v7tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:999px;background:#fff;font-size:10px}
+        .v7tag button{border:0;background:transparent;cursor:pointer;font-weight:700;color:#dc2626}
+        #v7summary{padding:6px 10px;margin-bottom:8px;background:#eef6ff;border:1px solid #cfe3ff;border-radius:6px;font-weight:600;color:#1e40af}
+    </style>
+</head>
+<body>
+
+<!-- BARRE DE HAUT DE PAGE -->
+<div id="v6-topbar" style="justify-content: center; text-align: center; padding: 12px 16px;">
+  <div style="text-align: center; width: 100%;">
+    <h1 style="margin: 0; font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff;">
+      Proforma Disbursement Account
+    </h1>
+  </div>
+</div>
+
+<div id="v6-toast">Enregistré</div>
+
+<!-- DOCUMENT PROFORMA PRINCIPAL -->
+<div class="container" id="pda-container">
+    <div class="corporate-header">
+        <div class="company-brand">SOCIETE COMMERCIALE TUNISIENNE</div>
+        <div class="agency-subtitle" id="agency_subtitle">Agence Sousse</div>
+        <div class="company-details" id="company_details">
+            Z.I. Sidi AbdelHamid, 4061 Sousse - Tunisia | TEL: (+216) 70 108 158 / FAX: (+216) 70 108 137 | E-MAIL: bibi.aymen@socotu.com.tn
+        </div>
+    </div>
+
+    <div class="sub-header-bar">
+        <div class="doc-title">Proforma Disbursement Account</div>
+        <div class="doc-date"><span id="port_label_date">Sousse</span> on: <input type="date" id="doc_date_input" style="width: 110px; border:none; background:#f1f5f9; text-align:center; font-weight:600; font-family:inherit; height:auto;"></div>
+    </div>
+
+    <div class="meta-grid">
+        <div class="meta-item">
+            <span class="meta-label">From / Branch:</span>
+            <span class="meta-value"><input type="text" id="branch_name" value="SOCIETE COMMERCIALE TUNISIENNE - Agence Sousse" style="font-weight: bold;"></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Port Selection:</span>
+            <span class="meta-value">
+                <select id="port_selector" onchange="onPortChange()">
+                    <option value="Sousse" selected="">Sousse Port</option>
+                    <option value="Sfax">Sfax Port</option>
+                    <option value="Rades">Radès / La Goulette Port</option>
+                    <option value="Bizerte">Bizerte Port</option>
+                    <option value="Gabes">Gabès Port</option>
+                </select>
+            </span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">To:</span>
+            <span class="meta-value"><input type="text" id="meta_to" value="COE 2 SEA"></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Weight:</span>
+            <span class="meta-value"><input type="text" id="meta_weight" value="ABT 5 000 MTS"></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Kind Attention:</span>
+            <span class="meta-value"><input type="text" id="meta_attn" value="OPERATIONS"></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Vessel Name:</span>
+            <span class="meta-value"><input type="text" id="meta_vessel" value="MV PONTICA"></span>
+        </div>
+        <div class="meta-item" style="grid-column: span 2;">
+            <span class="meta-label">Cargo:</span>
+            <span class="meta-value"><input type="text" id="meta_cargo" value="EXHAUSTED POMACE (BIOMASS)"></span>
+        </div>
+    </div>
+
+    <div class="vessel-particulars">
+        <div class="particular-group">
+            <label>L.O.A. (m)</label>
+            <input type="number" id="loa" value="127.87" step="0.01" onchange="recalculate()">
+        </div>
+        <div class="particular-group">
+            <label>B.E.A.M. (m)</label>
+            <input type="number" id="beam" value="15.85" step="0.01" onchange="recalculate()">
+        </div>
+        <div class="particular-group">
+            <label>S. Draft (m)</label>
+            <input type="number" id="draft" value="7.761" step="0.001" onchange="recalculate()">
+        </div>
+        <div class="particular-group">
+            <label>Theor. Draft (m)</label>
+            <input type="text" id="theor_draft" value="6.303" readonly="" title="0,14 * sqrt(LOA * Beam)">
+        </div>
+        <div class="particular-group">
+            <label>Ex. Rate &amp; Curr.</label>
+            <div style="display: flex; gap: 3px; width: 90px;">
+                <select id="curr_selector" style="width: 40px; padding: 2px 0; text-align: left; height: 22px;" onchange="recalculate()">
+                    <option value="USD" selected="">USD</option>
+                    <option value="TND">TND</option>
+                    <option value="AED">AED</option>
+                    <option value="EUR">EUR</option>
+                </select>
+                <input type="number" id="ex_rate" value="1.200" step="0.001" onchange="recalculate()" style="width: 48px; padding: 2px 3px; text-align: left; height: 22px;">
+            </div>
+        </div>
+        <div class="particular-group">
+            <label>IMO N°</label>
+            <input type="text" id="imo_num" value="9351234" style="text-align: left;">
+        </div>
+        <div class="particular-group">
+            <label>Call Sign</label>
+            <input type="text" id="call_sign" value="SVAB" style="text-align: left;">
+        </div>
+        <div class="particular-group">
+            <label>GRT</label>
+            <input type="number" id="grt_val" value="5420" step="1" style="text-align: left;">
+        </div>
+        <div class="particular-group">
+            <label>NRT</label>
+            <input type="number" id="nrt_val" value="2850" step="1" style="text-align: left;">
+        </div>
+        <div class="particular-group">
+            <label>N° Days</label>
+            <input type="number" class="qty-input" id="n_stay" value="4" step="1" onchange="document.getElementById('n_stay_table').value=this.value; recalculate();" style="width: 90px; text-align: left; height: 22px;">
+        </div>
+        <div class="volume-summary">
+            <span><strong>Geometric Volume (V):</strong> <span id="vol_display">15 730</span> m³</span>
+            <span><strong>Applied Bracket:</strong> <span id="bracket_display" style="color: #1d4ed8; font-weight: 700;">Bracket 3 (10,001 - 25,000 m³)</span></span>
+        </div>
+    </div>
+
+    <!-- TABLE 1: PORT DUES -->
+    <div class="section-header">Port Dues (Euro)</div>
+    <table class="data-table">
+        <tbody><tr>
+            <th>Item</th>
+            <th>Details</th>
+            <th>U. Cost</th>
+            <th>N°</th>
+            <th>T. Costs</th>
+            <th>I.S.P.S</th>
+            <th>V.A.T 19%</th>
+            <th>Total</th>
+        </tr>
+        <tr>
+            <td class="text-left"><strong>Shelter:</strong></td>
+            <td class="text-left">(Per Call)</td>
+            <td id="u_shelter" class="text-right">1 336,692</td>
+            <td class="text-center"><input type="number" class="qty-input" id="n_shelter" value="1" step="1" onchange="recalculate()"></td>
+            <td id="t_shelter" class="text-right">1 336,692</td>
+            <td id="isps_shelter" class="text-right">66,835</td>
+            <td id="vat_shelter" class="text-right">266,670</td>
+            <td id="tot_shelter" class="text-right">1 670,197</td>
+        </tr>
+        <tr>
+            <td class="text-left"><strong>Stay Dues:</strong></td>
+            <td class="text-left">(Per Day)</td>
+            <td id="u_stay" class="text-right">897,128</td>
+            <td class="text-center"><input type="number" class="qty-input" id="n_stay_table" value="4" step="1" onchange="document.getElementById('n_stay').value=this.value; recalculate();"></td>
+            <td id="t_stay" class="text-right">3 588,512</td>
+            <td id="isps_stay" class="text-right">179,426</td>
+            <td id="vat_stay" class="text-right">715,908</td>
+            <td id="tot_stay" class="text-right">4 483,846</td>
+        </tr>
+        <tr>
+            <td class="text-left"><strong>Pilotage:</strong></td>
+            <td class="text-left">(Per hour)</td>
+            <td id="u_pilot" class="text-right">261,408</td>
+            <td class="text-center"><input type="number" class="qty-input" id="n_pilot" value="2" step="1" onchange="recalculate()"></td>
+            <td id="t_pilot" class="text-right">522,816</td>
+            <td class="text-right">0,000</td>
+            <td id="vat_pilot" class="text-right">99,335</td>
+            <td id="tot_pilot" class="text-right">622,151</td>
+        </tr>
+        <tr>
+            <td class="text-left"><strong>Remorquage:</strong></td>
+            <td class="text-left">(Per hour)</td>
+            <td id="u_tug" class="text-right">539,418</td>
+            <td class="text-center"><input type="number" class="qty-input" id="n_tug" value="2" step="0.25" onchange="recalculate()"></td>
+            <td id="t_tug" class="text-right">1 078,836</td>
+            <td class="text-right">0,000</td>
+            <td id="vat_tug" class="text-right">204,979</td>
+            <td id="tot_tug" class="text-right">1 283,815</td>
+        </tr>
+        <tr>
+            <td class="text-left"><strong>Mooring &amp; Unmooring:</strong></td>
+            <td class="text-left">
+                Per operation (12,000 EUR/line &bull; Boat: 90,000 EUR/op)<br>
+                <span style="font-size: 9.5px; color: #475569;">
+                    Lines: <input type="number" class="qty-input" id="n_mooring" value="12" step="1" onchange="window._userMooring=true; recalculate();" style="width: 40px; height: 18px; font-size: 10px;">
+                    Boat: <input type="number" class="qty-input" id="n_lamanage_boat" value="2" step="1" onchange="recalculate();" style="width: 36px; height: 18px; font-size: 10px;">
+                    <select id="mooring_period" class="tariff-select" onchange="recalculate()" style="font-size: 9.5px; padding: 1px;">
+                        <option value="0">Normal</option>
+                        <option value="0.50">Nuit ouvrable +50%</option>
+                        <option value="1.00">Nuit férié +100%</option>
+                    </select>
+                </span>
+            </td>
+            <td id="u_mooring" class="text-right">12,000</td>
+            <td id="disp_n_mooring" class="text-center font-bold font-mono">12</td>
+            <td id="tot_mooring_combined_costs" class="text-right">324,000</td>
+            <td class="text-right">0,000</td>
+            <td id="vat_mooring_combined" class="text-right">61,560</td>
+            <td id="tot_mooring_combined_grand" class="text-right">385,560</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+            <td colspan="7" class="text-right"><strong>PORT DUES SUB TOTAL (Euro)</strong></td>
+            <td id="sub_port_dues" class="text-right">8 302,768</td>
+        </tr>
+    </tbody></table>
+
+    <!-- TABLE 2: PORT EXPENSES -->
+    <div class="section-header">Port Expenses (Euro)</div>
+    <table class="data-table">
+        <tbody><tr>
+            <th>Item</th>
+            <th>Details</th>
+            <th>U. Costs</th>
+            <th>Nbr</th>
+            <th>T. Costs</th>
+            <th>I.S.P.S</th>
+            <th>V.A.T 19%</th>
+            <th>Total</th>
+        </tr>
+        <tr>
+            <td class="text-left">Watchmen:</td>
+            <td class="text-left">(Per Day)</td>
+            <td class="text-center"><input type="number" value="150.000" step="0.001" id="u_watch" class="unit-price-input" onchange="recalculate()"></td>
+            <td class="text-center"><input type="number" class="qty-input" id="n_watch" value="4" step="1" onchange="recalculate()"></td>
+            <td id="t_watch" class="text-right">600,000</td>
+            <td class="text-right">0,000</td>
+            <td id="vat_watch" class="text-right">114,000</td>
+            <td id="tot_watch" class="text-right">714,000</td>
+        </tr>
+        <tr>
+            <td class="text-left">Garbage Removal:</td>
+            <td class="text-left">(Per Voyage)</td>
+            <td class="text-center"><input type="number" value="150.000" step="0.001" id="u_garb" class="unit-price-input" onchange="recalculate()"></td>
+            <td class="text-center"><input type="number" class="qty-input" id="n_garb" value="1" step="1" onchange="recalculate()"></td>
+            <td id="t_garb" class="text-right">150,000</td>
+            <td class="text-right">0,000</td>
+            <td id="vat_garb" class="text-right">0,000</td>
+            <td id="tot_garb" class="text-right">150,000</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+            <td colspan="7" class="text-right"><strong>Port Expenses Sub Total: (Euro)</strong></td>
+            <td id="sub_port_expenses" class="text-right">864,000</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+            <td colspan="7" class="text-right"><strong>Agency Fees: (Euro)</strong></td>
+            <td class="text-center"><input type="number" id="agency_fees" value="1500.000" step="0.001" class="unit-price-input" style="width:85px; font-weight:bold; text-align:left; height:20px;" onchange="recalculate()"></td>
+        </tr>
+        <tr style="background-color: #fff7ed; font-size: 11px;">
+            <td colspan="6" class="text-right" style="color: #9a3412;"><strong>Currency Control Charges:</strong></td>
+            <td class="text-center">
+                <select id="currency_control_rate" class="tariff-select" onchange="recalculate()" style="width:70px;">
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="2">2%</option>
+                    <option value="3">3%</option>
+                </select>
+            </td>
+            <td id="currency_control_charge" class="text-right" style="color: #9a3412;">0,000</td>
+        </tr>
+        <tr style="background-color: #eff6ff; font-size: 11px;">
+            <td colspan="7" class="text-right" style="color: #0f2c59;"><strong>TOTAL: (Euro)</strong></td>
+            <td id="grand_total_eur" class="text-right" style="color: #0f2c59;">10 666,768</td>
+        </tr>
+        <tr style="background-color: #eff6ff; font-size: 11px;">
+            <td colspan="7" class="text-right" style="color: #0f2c59;"><strong id="curr_label_total">TOTAL: (USD)</strong></td>
+            <td id="grand_total_curr" class="text-right" style="color: #0f2c59;">12 800,122</td>
+        </tr>
+    </tbody></table>
+
+    <div class="footer-section">
+        <div class="footer-box">
+            <strong>Bank Details</strong>
+            COMPANY NAME: SOCIETE COMMERCIALE TUNISIENNE<br>
+            BANK NAME: SOCIETE TUNISIENNE DE BANQUE | BRANCH: AGENCE DE SOUSSE<br>
+            SWIFT: STBKTNTT | ACC N°: 10 500 002 0016016 788 25<br>
+            IBAN: TN59 1050 0002 0016 0167 8825
+        </div>
+        <div class="footer-box">
+            <strong>Restrictions / Instructions</strong>
+            Port charges and selected services are calculated according to the applicable tariff or supplier rate.<br>Max LOA: 160.00 m | Max Draft: 7.80 m LOADED (Salt or Silica Sand)<br>
+            Distance from Sea Water to Hatch coaming: 9.00 m<br>
+            Ballast clean / Full on Arrival | Cargo Holds Clean, Dry<br>
+            7/7 &amp; 24/24 Contact: + 216 21 352 109
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <span>SOCIETE COMMERCIALE TUNISIENNE - Proforma Disbursement Account</span>
+        <span>SOCOTU Maritime Agency</span>
+    </div>
+
+    <div class="btn-container">
+        <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+        <button class="btn-save" onclick="v6Save()">💾 Sauvegarder</button>
+    </div>
+</div>
+
+<!-- SECTION SERVICES RENDUS AU NAVIRE ET À L'ÉQUIPAGE -->
+<section class="card" id="v7-services">
+  <h2 style="margin-top:0;color:#0f2c59;font-size:14px;">Prestations complémentaires à inclure dans le PDA</h2>
+  <div id="v7summary">0 prestation(s) sélectionnée(s)</div>
+
+  <div class="v7section" data-g="ship">
+    <div class="v7section-title">🚢 SERVICES RENDUS AU NAVIRE</div>
+    <div class="v7select-row">
+      <label for="v7_ship_service">Sélectionner un service :</label>
+      <select id="v7_ship_service" class="v7select" onchange="V7.addSelect(this,'ship')">
+        <option value="">— Faire défiler et choisir un service —</option>
+        <option>Eau douce / Fresh water</option>
+        <option>Avitaillement / Bunkering</option>
+        <option>Ship supply / Fournitures navire</option>
+        <option>Vivres navire</option>
+        <option>Enlèvement des déchets / Garbage</option>
+        <option>Huiles usées / Sludge &amp; waste oil</option>
+        <option>Nettoyage du navire</option>
+        <option>Réparation / Maintenance</option>
+        <option>Électricité</option>
+        <option>Soudure</option>
+        <option>Plomberie</option>
+        <option>Travaux à bord</option>
+        <option>Grue / Mobile crane</option>
+        <option>Manutention / Handling</option>
+        <option>Acconage</option>
+        <option>Pesage / Weighbridge</option>
+        <option>Magasinage / Entrepôt sous douane</option>
+        <option>Fumigation</option>
+        <option>Draft Survey</option>
+        <option>Tally / Pointage</option>
+        <option>Transport</option>
+        <option>Launch / Boat service</option>
+        <option>Garde-feu / Fire watch</option>
+        <option>Services techniques</option>
+        <option>Inspection / Survey</option>
+        <option>Autres services au navire</option>
+      </select>
+    </div>
+    <div id="v7_ship_selected" class="v7selected"></div>
+  </div>
+
+  <div class="v7section" data-g="crew">
+    <div class="v7section-title">👥 SERVICES RENDUS À L’ÉQUIPAGE</div>
+    <div class="v7select-row">
+      <label for="v7_crew_service">Sélectionner un service :</label>
+      <select id="v7_crew_service" class="v7select" onchange="V7.addSelect(this,'crew')">
+        <option value="">— Faire défiler et choisir un service —</option>
+        <option>Vivres équipage</option>
+        <option>Transport équipage</option>
+        <option>Blanchissage</option>
+        <option>Télécommunication</option>
+        <option>Frais médicaux</option>
+        <option>Hospitalisation</option>
+        <option>Rapatriement</option>
+        <option>Crew change</option>
+        <option>Visa / Formalités équipage</option>
+        <option>Avance au capitaine</option>
+        <option>Courrier / Courier</option>
+        <option>Hébergement équipage</option>
+        <option>Autres services équipage</option>
+      </select>
+    </div>
+    <div id="v7_crew_selected" class="v7selected"></div>
+  </div>
+</section>
+
+<script>
+function formatNum(val) {
+    if (isNaN(val)) return "0,000";
+    let parts = val.toFixed(3).split('.');
+    let integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    return integerPart + "," + parts[1];
+}
+
+function formatInt(val) {
+    if (isNaN(val)) return "0";
+    let rounded = Math.ceil(val);
+    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+function onPortChange() {
+    let port = document.getElementById('port_selector').value;
+    document.getElementById('port_label_date').innerText = port;
+    document.getElementById('agency_subtitle').innerText = "Agence " + port;
+    let branchText = "SOCIETE COMMERCIALE TUNISIENNE - Agence " + port;
+    document.getElementById('branch_name').value = branchText;
+    recalculate();
+}
+
+function recalculate() {
+    let loa = parseFloat(document.getElementById('loa').value) || 0;
+    let beam = parseFloat(document.getElementById('beam').value) || 0;
+    let draft = parseFloat(document.getElementById('draft').value) || 0;
+    let ex_rate = parseFloat(document.getElementById('ex_rate').value) || 1.20;
+    let curr_symbol = document.getElementById('curr_selector').value;
+
+    document.getElementById('curr_label_total').innerText = "TOTAL: (" + curr_symbol + ")";
+
+    let min_draft = 0.14 * Math.sqrt(loa * beam);
+    document.getElementById('theor_draft').value = min_draft.toFixed(3);
+
+    let actual_draft = Math.max(draft, min_draft);
+    let volume = Math.ceil(loa * beam * actual_draft);
+
+    document.getElementById('vol_display').innerText = formatInt(volume);
+
+    let bracketName = "";
+    if (volume <= 1000) {
+        bracketName = "Bracket 1 (0 - 1,000 m³)";
+    } else if (volume <= 10000) {
+        bracketName = "Bracket 2 (1,001 - 10,000 m³)";
+    } else if (volume <= 25000) {
+        bracketName = "Bracket 3 (10,001 - 25,000 m³)";
+    } else if (volume <= 40000) {
+        bracketName = "Bracket 4 (25,001 - 40,000 m³)";
+    } else if (volume <= 75000) {
+        bracketName = "Bracket 5 (40,001 - 75,000 m³)";
+    } else {
+        bracketName = "Bracket 6 (> 75,000 m³)";
+    }
+
+    function getDefaultMooringLines(v) {
+        if (v <= 1000) return 6;
+        if (v <= 10000) return 8;
+        if (v <= 25000) return 12;
+        if (v <= 40000) return 16;
+        if (v <= 75000) return 20;
+        if (v <= 150000) return 24;
+        return 30;
+    }
+
+    if (!window._userMooring) {
+        let nMooringEl = document.getElementById('n_mooring');
+        if (nMooringEl) nMooringEl.value = getDefaultMooringLines(volume);
+    }
+
+    let shelter_base = 0;
+    let stay_unit = 0;
+    let pilot_unit = 0;
+
+    if (volume <= 10000) {
+        shelter_base = volume * 0.0876;
+        stay_unit = volume * 0.059;
+        let calc_pilot = volume * 0.1104;
+        pilot_unit = (volume <= 1000) ? Math.max(calc_pilot, 110.400) : 110.4 + 0.0107 * (volume - 1000);
+    } else if (volume <= 25000) {
+        shelter_base = 876 + 0.0804 * (volume - 10000);
+        stay_unit = 590 + 0.0536 * (volume - 10000);
+        pilot_unit = 206.4 + 0.0096 * (volume - 10000);
+    } else if (volume <= 40000) {
+        shelter_base = 2082 + 0.0732 * (volume - 25000);
+        stay_unit = 1394 + 0.0496 * (volume - 25000);
+        pilot_unit = 350.4 + 0.0091 * (volume - 25000);
+    } else if (volume <= 75000) {
+        shelter_base = 3180 + 0.0696 * (volume - 40000);
+        stay_unit = 2138 + 0.047 * (volume - 40000);
+        pilot_unit = 487.2 + 0.0086 * (volume - 40000);
+    } else if (volume <= 150000) {
+        shelter_base = 5616 + 0.0648 * (volume - 75000);
+        stay_unit = 3783 + 0.044 * (volume - 75000);
+        pilot_unit = 781.2 + 0.0084 * (volume - 75000);
+    } else {
+        shelter_base = 10476 + 0.0624 * (volume - 150000);
+        stay_unit = 7083 + 0.0415 * (volume - 150000);
+        pilot_unit = 1419.6 + 0.0077 * (volume - 150000);
+    }
+
+    document.getElementById('bracket_display').innerText = bracketName;
+
+    let n_stay = parseFloat(document.getElementById('n_stay').value) || 0;
+    document.getElementById('n_stay_table').value = n_stay;
+
+    let n_shelter = parseFloat(document.getElementById('n_shelter').value) || 0;
+    let n_pilot = parseFloat(document.getElementById('n_pilot').value) || 0;
+    let n_tug = parseFloat(document.getElementById('n_tug').value) || 0;
+    let n_mooring = parseFloat(document.getElementById('n_mooring').value) || 0;
+
+    let t_shelter = shelter_base * n_shelter;
+    let isps_shelter = t_shelter * 0.05;
+    let vat_shelter = (t_shelter + isps_shelter) * 0.19;
+    let tot_shelter = t_shelter + isps_shelter + vat_shelter;
+
+    document.getElementById('u_shelter').innerText = formatNum(shelter_base);
+    document.getElementById('t_shelter').innerText = formatNum(t_shelter);
+    document.getElementById('isps_shelter').innerText = formatNum(isps_shelter);
+    document.getElementById('vat_shelter').innerText = formatNum(vat_shelter);
+    document.getElementById('tot_shelter').innerText = formatNum(tot_shelter);
+
+    let t_stay = stay_unit * n_stay;
+    let isps_stay = t_stay * 0.05;
+    let vat_stay = (t_stay + isps_stay) * 0.19;
+    let tot_stay = t_stay + isps_stay + vat_stay;
+
+    document.getElementById('u_stay').innerText = formatNum(stay_unit);
+    document.getElementById('t_stay').innerText = formatNum(t_stay);
+    document.getElementById('isps_stay').innerText = formatNum(isps_stay);
+    document.getElementById('vat_stay').innerText = formatNum(vat_stay);
+    document.getElementById('tot_stay').innerText = formatNum(tot_stay);
+
+    let t_pilot = pilot_unit * n_pilot;
+    let vat_pilot = t_pilot * 0.19;
+    let tot_pilot = t_pilot + vat_pilot;
+
+    document.getElementById('u_pilot').innerText = formatNum(pilot_unit);
+    document.getElementById('t_pilot').innerText = formatNum(t_pilot);
+    document.getElementById('vat_pilot').innerText = formatNum(vat_pilot);
+    document.getElementById('tot_pilot').innerText = formatNum(tot_pilot);
+
+    // REMORQUAGE — JORT N°67 du 22.08.2017
+    let tug_unit = 0, tug_bracket = '';
+    if (volume <= 1000) { tug_unit = 114; tug_bracket = '0–1 000 m³ : 114 EUR/h'; }
+    else if (volume <= 10000) { tug_unit = 114 + 0.03034 * (volume - 1000); tug_bracket = '1 001–10 000 : 114 + 0,03034 × excédent'; }
+    else if (volume <= 25000) { tug_unit = 387 + 0.0266 * (volume - 10000); tug_bracket = '10 001–25 000 : 387 + 0,0266 × excédent'; }
+    else if (volume <= 40000) { tug_unit = 786 + 0.0240 * (volume - 25000); tug_bracket = '25 001–40 000 : 786 + 0,0240 × excédent'; }
+    else if (volume <= 75000) { tug_unit = 1146 + 0.0236 * (volume - 40000); tug_bracket = '40 001–75 000 : 1 146 + 0,0236 × excédent'; }
+    else if (volume <= 150000) { tug_unit = 1972 + 0.0068 * (volume - 75000); tug_bracket = '75 001–150 000 : 1 972 + 0,0068 × excédent'; }
+    else { tug_unit = 2210 + 0.0061 * (volume - 150000); tug_bracket = '>150 000 : 2 210 + 0,0061 × excédent'; }
+    document.getElementById('tug_bracket').innerText = tug_bracket;
+    let t_tug = tug_unit * n_tug;
+    let vat_tug = t_tug * 0.19;
+    let tot_tug = t_tug + vat_tug;
+    document.getElementById('u_tug').innerText = formatNum(tug_unit);
+    document.getElementById('t_tug').innerText = formatNum(t_tug);
+    document.getElementById('vat_tug').innerText = formatNum(vat_tug);
+    document.getElementById('tot_tug').innerText = formatNum(tot_tug);
+
+    // LAMANAGE / AMARRAGE-DESAMARRAGE — JORT N°90 du 04.09.2020
+    let mooring_unit = 6, mooring_bracket = '';
+    if (volume <= 10000) { mooring_unit = 6; mooring_bracket = '0–10 000 m³ : 6 EUR/amarre'; }
+    else if (volume <= 25000) { mooring_unit = 12; mooring_bracket = '10 001–25 000 : 12 EUR/amarre'; }
+    else if (volume <= 40000) { mooring_unit = 15; mooring_bracket = '25 001–40 000 : 15 EUR/amarre'; }
+    else if (volume <= 75000) { mooring_unit = 18; mooring_bracket = '40 001–75 000 : 18 EUR/amarre'; }
+    else if (volume <= 150000) { mooring_unit = 20; mooring_bracket = '75 001–150 000 : 20 EUR/amarre'; }
+    else { mooring_unit = 25; mooring_bracket = '>150 000 m³ : 25 EUR/amarre'; }
+
+    let mooring_surcharge = parseFloat(document.getElementById('mooring_period').value) || 0;
+    let mooring_rate = mooring_unit * (1 + mooring_surcharge);
+    let t_mooring = mooring_rate * n_mooring;
+    let vat_mooring = t_mooring * 0.19;
+    let tot_mooring = t_mooring + vat_mooring;
+
+    // Embarcation de lamanage : 90 EUR/opération
+    let n_lamanage_boat = parseFloat(document.getElementById('n_lamanage_boat').value) || 0;
+    let lamanage_boat_unit = 90;
+    let t_lamanage_boat = lamanage_boat_unit * n_lamanage_boat;
+    let vat_lamanage_boat = t_lamanage_boat * 0.19;
+    let tot_lamanage_boat = t_lamanage_boat + vat_lamanage_boat;
+
+    let combined_mooring_costs = t_mooring + t_lamanage_boat;
+    let combined_mooring_vat = vat_mooring + vat_lamanage_boat;
+    let combined_mooring_grand = tot_mooring + tot_lamanage_boat;
+
+    if (document.getElementById('u_mooring')) document.getElementById('u_mooring').innerText = formatNum(mooring_rate);
+    if (document.getElementById('disp_n_mooring')) document.getElementById('disp_n_mooring').innerText = n_mooring;
+    if (document.getElementById('tot_mooring_combined_costs')) document.getElementById('tot_mooring_combined_costs').innerText = formatNum(combined_mooring_costs);
+    if (document.getElementById('vat_mooring_combined')) document.getElementById('vat_mooring_combined').innerText = formatNum(combined_mooring_vat);
+    if (document.getElementById('tot_mooring_combined_grand')) document.getElementById('tot_mooring_combined_grand').innerText = formatNum(combined_mooring_grand);
+
+    let sub_port_dues = tot_shelter + tot_stay + tot_pilot + tot_tug + combined_mooring_grand;
+    document.getElementById('sub_port_dues').innerText = formatNum(sub_port_dues);
+
+    let u_watch = parseFloat(document.getElementById('u_watch').value) || 0;
+    let n_watch = parseFloat(document.getElementById('n_watch').value) || 0;
+    let t_watch = u_watch * n_watch;
+    let vat_watch = t_watch * 0.19;
+    let tot_watch = t_watch + vat_watch;
+    document.getElementById('t_watch').innerText = formatNum(t_watch);
+    document.getElementById('vat_watch').innerText = formatNum(vat_watch);
+    document.getElementById('tot_watch').innerText = formatNum(tot_watch);
+
+    let u_garb = parseFloat(document.getElementById('u_garb').value) || 0;
+    let n_garb = parseFloat(document.getElementById('n_garb').value) || 0;
+    let t_garb = u_garb * n_garb;
+    let vat_garb = 0;
+    let tot_garb = t_garb + vat_garb;
+    document.getElementById('t_garb').innerText = formatNum(t_garb);
+    document.getElementById('vat_garb').innerText = formatNum(vat_garb);
+    document.getElementById('tot_garb').innerText = formatNum(tot_garb);
+
+    let sub_port_expenses = tot_watch + tot_garb;
+    document.getElementById('sub_port_expenses').innerText = formatNum(sub_port_expenses);
+
+    let agency_fees = parseFloat(document.getElementById('agency_fees').value) || 0;
+
+    let proforma_before_currency_control = sub_port_dues + sub_port_expenses + agency_fees;
+    let currency_control_rate = parseFloat(document.getElementById('currency_control_rate')?.value) || 0;
+    let currency_control_charge = proforma_before_currency_control * currency_control_rate / 100;
+    document.getElementById('currency_control_charge').innerText = formatNum(currency_control_charge);
+
+    let grand_total_eur = proforma_before_currency_control + currency_control_charge;
+    document.getElementById('grand_total_eur').innerText = formatNum(grand_total_eur);
+
+    let grand_total_curr = grand_total_eur * ex_rate;
+    document.getElementById('grand_total_curr').innerText = formatNum(grand_total_curr);
+}
+
+function saveDataToFile() {
+    let htmlContent = document.documentElement.outerHTML;
+    let blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'SOCOTU_PDA_Application_V8.html';
+    a.click();
+}
+
+const V6_KEY='SOCOTU_PDA_V6_HISTORY';
+const V6_FIELDS=['pda_reference','doc_date_input','branch_name','port_selector','meta_to','meta_weight','meta_attn','meta_vessel','meta_cargo','loa','beam','draft','curr_selector','ex_rate','imo_num','call_sign','grt_val','nrt_val','n_stay','n_shelter','n_pilot','n_tug','n_mooring','mooring_period','n_lamanage_boat','u_watch','n_watch','u_garb','n_garb','agency_fees','currency_control_rate'];
+let v6CurrentId=null;
+
+function v6Data(){
+  const o={};
+  V6_FIELDS.forEach(id=>{const e=document.getElementById(id); if(e)o[id]=e.value;});
+  o.ref=v6CurrentId || ('PDA-'+new Date().toISOString().replace(/\D/g,'').slice(0,14));
+  o.savedAt=new Date().toISOString();
+  o.totalEUR=document.getElementById('grand_total_eur')?.innerText||'0,000';
+  o.totalCurr=document.getElementById('grand_total_curr')?.innerText||'0,000';
+  return o;
+}
+function v6History(){try{return JSON.parse(localStorage.getItem(V6_KEY)||'[]')}catch(e){return[]}}
+function v6SetHistory(a){localStorage.setItem(V6_KEY,JSON.stringify(a))}
+function v6Toast(msg){const t=document.getElementById('v6-toast');t.textContent=msg;t.style.display='block';clearTimeout(window._v6toast);window._v6toast=setTimeout(()=>t.style.display='none',1800)}
+function v6SetStatus(){const d=v6Data();document.getElementById('v6-status').textContent=(d.ref||'Nouveau PDA')+' • '+(d.meta_vessel||'Navire non renseigné')}
+function v6Save(){
+  recalculate();
+  const d=v6Data(); let a=v6History(); const i=a.findIndex(x=>x.ref===d.ref);
+  if(i>=0)a[i]=d;else a.unshift(d);
+  v6SetHistory(a.slice(0,200)); v6CurrentId=d.ref; v6SetStatus(); v6RenderDashboard(); v6Toast('PDA enregistré localement');
+}
+function v6New(){
+  if(confirm('Créer un nouveau PDA ?')){
+    v6CurrentId=null;
+    document.querySelectorAll('input').forEach(e=>{if(e.type==='number') e.value='0';});
+    const defaults={doc_date_input:new Date().toISOString().slice(0,10),meta_vessel:'',meta_cargo:'',meta_to:'',meta_weight:'',meta_attn:'OPERATIONS',imo_num:'',call_sign:'',grt_val:'0',nrt_val:'0',n_stay:'1',n_shelter:'1',n_pilot:'2',n_tug:'2',n_mooring:'2',mooring_period:'0',n_lamanage_boat:'2',n_watch:'0',n_garb:'0',agency_fees:'0',currency_control_rate:'0'};
+    Object.entries(defaults).forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v});
+    document.getElementById('loa').value='0';document.getElementById('beam').value='0';document.getElementById('draft').value='0';
+    document.getElementById('v6-status').textContent='Nouveau PDA';
+    recalculate();v6Toast('Nouveau PDA');
+  }
+}
+function v6Dashboard(){const d=document.getElementById('v6-dashboard');d.style.display=d.style.display==='none'?'block':'none';v6RenderDashboard()}
+function v6RenderDashboard(){
+  const a=v6History(); document.getElementById('v6-count').textContent=a.length;
+  document.getElementById('v6-vessels').textContent=new Set(a.map(x=>x.meta_vessel).filter(Boolean)).size;
+  const last=a[0];document.getElementById('v6-total').textContent=last?last.totalCurr:'0,000';document.getElementById('v6-port').textContent=last?last.port_selector:'—';
+  v6RenderHistory();
+}
+function v6RenderHistory(){
+  const q=(document.getElementById('v6-search')?.value||'').toLowerCase();
+  const a=v6History().filter(x=>JSON.stringify(x).toLowerCase().includes(q));
+  document.querySelector('#v6-history tbody').innerHTML=a.map(x=>`<tr>
+    <td>${x.ref}</td><td>${x.doc_date_input||''}</td><td>${x.meta_vessel||''}</td><td>${x.port_selector||''}</td>
+    <td>${x.curr_selector||''}</td><td>${x.totalCurr||''}</td>
+    <td><button class="v6-btn gray" onclick="v6Load('${x.ref}')">Ouvrir</button></td></tr>`).join('');
+}
+function v6Load(ref){
+  const d=v6History().find(x=>x.ref===ref);if(!d)return;
+  Object.entries(d).forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v});
+  v6CurrentId=ref;recalculate();v6SetStatus();document.getElementById('v6-dashboard').style.display='none';v6Toast('PDA chargé');
+}
+function v6ClearHistory(){if(confirm('Effacer tout l’historique local des PDA ?')){localStorage.removeItem(V6_KEY);v6RenderDashboard();v6Toast('Historique effacé')}}
+function v6Print(){recalculate();window.print()}
+function v6ExportCSV(){
+  const a=v6History(); if(!a.length){v6Toast('Aucun PDA enregistré');return}
+  const cols=['ref','doc_date_input','meta_vessel','port_selector','meta_cargo','curr_selector','totalEUR','totalCurr'];
+  const esc=v=>`"${String(v??'').replaceAll('"','""')}"`;
+  const csv=[cols.join(';'),...a.map(x=>cols.map(c=>esc(x[c])).join(';'))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(blob),aEl=document.createElement('a');
+  aEl.href=u;aEl.download='SOCOTU_PDA_History_V6.csv';aEl.click();URL.revokeObjectURL(u);
+}
+
+// V7 Prestations
+const state={ship:[],crew:[]};
+window.V7={
+ all:()=>{
+   ['Eau douce / Fresh water','Vivres navire','Enlèvement des déchets / Garbage','Draft Survey','Crew change'].forEach(x=>{if(!state.ship.includes(x))state.ship.push(x)});
+   render('ship');
+ },
+ none:()=>{state.ship.length=0;state.crew.length=0;render('ship');render('crew');},
+ addSelect:(sel,g)=>{const v=sel.value;if(!v)return;if(!state[g].includes(v))state[g].push(v);render(g);sel.value='';}
+};
+function render(group){
+ const id=group==='ship'?'v7_ship_selected':'v7_crew_selected';
+ const box=document.getElementById(id); if(!box)return;
+ box.innerHTML='';
+ state[group].forEach((name,i)=>{
+   const t=document.createElement('span'); t.className='v7tag'; t.innerHTML='<span>'+name+'</span><button type="button" aria-label="Supprimer">×</button>';
+   t.querySelector('button').onclick=()=>{state[group].splice(i,1);render(group);}; box.appendChild(t);
+ });
+ document.getElementById('v7summary').textContent=(state.ship.length+state.crew.length)+' prestation(s) sélectionnée(s)';
+}
+
+window.onload = function() {
+    let today = new Date().toISOString().split('T')[0];
+    if(!document.getElementById('doc_date_input').value) document.getElementById('doc_date_input').value = today;
+    recalculate();
+    v6SetStatus();
+};
+</script>
+</body>
+</html>

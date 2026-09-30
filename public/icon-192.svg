@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="36" fill="#0f2c59"/>
+  <circle cx="96" cy="56" r="16" fill="none" stroke="#f59e0b" stroke-width="8"/>
+  <line x1="96" y1="72" x2="96" y2="152" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
+  <line x1="68" y1="92" x2="124" y2="92" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
+  <path d="M48 116 C 48 152, 144 152, 144 116" fill="none" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
+  <polygon points="48,110 40,122 56,122" fill="#f59e0b"/>
+  <polygon points="144,110 136,122 152,122" fill="#f59e0b"/>
+  <text x="96" y="176" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="16" fill="#ffffff" letter-spacing="2">SOCOTU</text>
+</svg>
