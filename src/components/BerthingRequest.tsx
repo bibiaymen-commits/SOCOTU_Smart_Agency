@@ -197,17 +197,17 @@ export const BerthingRequest: React.FC<BerthingRequestProps> = ({
   // Auto-synchronize cargaison et poids depuis la Proforma
   useEffect(() => {
     if (pda?.vessel) {
-      const op = pda.vessel.cargoOperation === 'Discharging' ? 'DEBARQUEMENT' : 'EMBARQUEMENT';
-      const weight = pda.vessel.weightCargo ? pda.vessel.weightCargo.replace(/\s*MTS/i, '').trim() : '7500';
-      const cargo = pda.vessel.cargo || 'sable';
-      const expectedAccostage = `${op} ${weight} MTS ${cargo}  EN VRAC`;
+      const op = pda.vessel.cargoOperation === 'Loading' ? 'EMBARQUEMENT' : 'DEBARQUEMENT';
+      const weight = pda.vessel.weightCargo ? pda.vessel.weightCargo.replace(/\s*MTS/i, '').trim() : '';
+      const cargo = pda.vessel.cargo || '';
+      const expectedAccostage = (cargo || weight) ? `${op} ${weight ? weight + ' MTS ' : ''}${cargo}`.trim() : '';
 
       // Synchroniser si la valeur actuelle est par défaut ou vide
       if (
         !berthing.accostagePour ||
-        berthing.accostagePour.includes('7500 MTS sable') ||
-        berthing.accostagePour.includes(cargo) ||
-        berthing.accostagePour.includes(weight)
+        berthing.accostagePour.includes('7500') ||
+        berthing.accostagePour.includes('sable') ||
+        (expectedAccostage && berthing.accostagePour !== expectedAccostage)
       ) {
         onUpdateBerthing({
           ...berthing,

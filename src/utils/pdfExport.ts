@@ -143,14 +143,10 @@ export async function exportToPdf(
  */
 export async function generatePdfBlob(
   elementId: string,
-  filename: string
+  filename: string,
+  htmlContent?: string
 ): Promise<{ blob: Blob; file: File; url: string } | null> {
   const safeFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
-  const element = document.getElementById(elementId);
-  if (!element) {
-    console.error(`Element with id ${elementId} not found`);
-    return null;
-  }
 
   const baseOpt = {
     margin: [4, 4, 4, 4] as [number, number, number, number],
@@ -171,6 +167,61 @@ export async function generatePdfBlob(
       orientation: 'portrait' as const
     }
   };
+
+  // If standalone HTML is provided, render in an isolated clean iframe
+  if (htmlContent) {
+    let iframe: HTMLIFrameElement | null = null;
+    try {
+      iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-10000px';
+      iframe.style.top = '0';
+      iframe.style.width = '1000px';
+      iframe.style.height = '1400px';
+      iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        await new Promise((res) => setTimeout(res, 180));
+
+        const target = (doc.querySelector('.container') as HTMLElement) || doc.body;
+        const worker = html2pdf().set(baseOpt).from(target);
+        let blob: Blob;
+        try {
+          blob = await worker.output('blob');
+        } catch {
+          blob = await worker.outputPdf('blob');
+        }
+
+        document.body.removeChild(iframe);
+
+        if (!blob) throw new Error('PDF output returned empty blob');
+        const file = new File([blob], safeFilename, { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        return { blob, file, url };
+      }
+    } catch (err) {
+      console.warn('Isolated iframe Blob export fallback:', err);
+      if (iframe && document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+    }
+  }
+
+  // Fallback to DOM element
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error(`Element with id ${elementId} not found`);
+    return null;
+  }
 
   try {
     const worker = html2pdf().set(baseOpt).from(element);

@@ -1,8 +1,9 @@
-import { OfficialPdaModel, ArrivalDeclarationModel } from '../types/pda';
+import { OfficialPdaModel, ArrivalDeclarationModel, BerthingRequestModel } from '../types/pda';
 
 export const AUTOSAVE_PDA_KEY = 'SOCOTU_CURRENT_PDA_AUTOSAVE';
 export const AUTOSAVE_DECLARATION_KEY = 'SOCOTU_DECLARATION_AUTOSAVE';
 export const AUTOSAVE_SOF_KEY = 'SOCOTU_SOF_AUTOSAVE';
+export const AUTOSAVE_BERTHING_KEY = 'SOCOTU_BERTHING_AUTOSAVE';
 export const AUTOSAVE_META_KEY = 'SOCOTU_AUTOSAVE_METADATA';
 
 export interface SofDraftModel {
@@ -94,11 +95,12 @@ export function mergeSofIntoDeclaration(
 }
 
 /**
- * Saves current PDA, Declaration, and SOF states into localStorage
+ * Saves current PDA, Declaration, SOF, and Berthing states into localStorage
  */
 export function saveCurrentStatesToLocalStorage(
   pda: OfficialPdaModel,
-  declaration: ArrivalDeclarationModel
+  declaration: ArrivalDeclarationModel,
+  berthing?: BerthingRequestModel
 ): AutoSaveMetadata {
   const now = new Date();
   const meta: AutoSaveMetadata = {
@@ -119,7 +121,12 @@ export function saveCurrentStatesToLocalStorage(
     const sofState = extractSofState(declaration);
     localStorage.setItem(AUTOSAVE_SOF_KEY, JSON.stringify(sofState));
 
-    // 4. Persist metadata
+    // 4. Persist Berthing request if provided
+    if (berthing) {
+      localStorage.setItem(AUTOSAVE_BERTHING_KEY, JSON.stringify(berthing));
+    }
+
+    // 5. Persist metadata
     localStorage.setItem(AUTOSAVE_META_KEY, JSON.stringify(meta));
   } catch (err) {
     console.error('AutoSave localStorage error:', err);
@@ -135,11 +142,13 @@ export function loadAutoSavedSession(): {
   pda: OfficialPdaModel | null;
   declaration: ArrivalDeclarationModel | null;
   sof: SofDraftModel | null;
+  berthing: BerthingRequestModel | null;
   metadata: AutoSaveMetadata | null;
 } {
   let pda: OfficialPdaModel | null = null;
   let declaration: ArrivalDeclarationModel | null = null;
   let sof: SofDraftModel | null = null;
+  let berthing: BerthingRequestModel | null = null;
   let metadata: AutoSaveMetadata | null = null;
 
   try {
@@ -163,6 +172,11 @@ export function loadAutoSavedSession(): {
       sof = JSON.parse(rawSof);
     }
 
+    const rawBerthing = localStorage.getItem(AUTOSAVE_BERTHING_KEY);
+    if (rawBerthing) {
+      berthing = JSON.parse(rawBerthing);
+    }
+
     if (declaration && sof) {
       declaration = mergeSofIntoDeclaration(declaration, sof);
     }
@@ -170,5 +184,5 @@ export function loadAutoSavedSession(): {
     console.error('Error reading auto-saved session from localStorage:', err);
   }
 
-  return { pda, declaration, sof, metadata };
+  return { pda, declaration, sof, berthing, metadata };
 }

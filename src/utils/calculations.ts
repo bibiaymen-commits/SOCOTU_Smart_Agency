@@ -19,6 +19,30 @@ export function formatInt(val: number): string {
   return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/**
+ * Returns today's date in local ISO format (YYYY-MM-DD)
+ */
+export function getTodayIsoDate(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Formats YYYY-MM-DD into official business date DD/MM/YYYY
+ */
+export function formatDisplayDate(dateStr?: string): string {
+  if (!dateStr) return '';
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${d}/${m}/${y}`;
+  }
+  return dateStr;
+}
+
 export function calcVesselMetrics(loa: number, beam: number, draft: number) {
   const safeLoa = Math.max(loa || 0, 0);
   const safeBeam = Math.max(beam || 0, 0);

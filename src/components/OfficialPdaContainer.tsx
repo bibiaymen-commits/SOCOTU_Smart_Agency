@@ -19,7 +19,9 @@ import {
   calculatePortExpenses, 
   formatInt, 
   formatNum,
-  getDefaultMooringLines
+  getDefaultMooringLines,
+  getTodayIsoDate,
+  formatDisplayDate
 } from '../utils/calculations';
 
 interface OfficialPdaContainerProps {
@@ -352,19 +354,41 @@ export const OfficialPdaContainer: React.FC<OfficialPdaContainerProps> = ({
       <SocotuOfficialHeader port={pda.port} />
 
       {/* Sub-header below horizontal line */}
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
         <div className="text-sm font-extrabold text-[#0f2c59] uppercase tracking-wide">
           Proforma Disbursement Account
         </div>
-        <div className="text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-300 flex items-center gap-1.5 shadow-2xs">
-          <span className="font-semibold">{pda.port} on :</span>
-          <input
-            type="date"
-            value={pda.date || new Date().toISOString().slice(0, 10)}
-            onChange={e => onUpdatePda({ ...pda, date: e.target.value })}
-            className="w-[125px] border border-slate-300 rounded px-1.5 py-0.5 bg-white text-center font-semibold font-mono text-[11px] text-slate-800 cursor-pointer hover:border-blue-400 focus:ring-1 focus:ring-blue-500 outline-none"
-            title="Date automatique du jour (modifiable à tout moment)"
-          />
+        <div className="text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-300 flex items-center gap-1.5 shadow-2xs print:border-none print:bg-transparent print:p-0">
+          <span className="font-semibold text-[#0f2c59]">{pda.port} on :</span>
+          
+          {/* Print-only clean formatted date */}
+          <span className="hidden print:inline font-mono font-bold text-slate-900">
+            {formatDisplayDate(pda.date || getTodayIsoDate())}
+          </span>
+
+          {/* Interactive Screen Date with Automatic Today Feature */}
+          <div className="flex items-center gap-1 print:hidden">
+            <input
+              type="date"
+              value={pda.date || getTodayIsoDate()}
+              onChange={e => onUpdatePda({ ...pda, date: e.target.value })}
+              className="w-[125px] border border-slate-300 rounded px-1.5 py-0.5 bg-white text-center font-bold font-mono text-[11px] text-slate-800 cursor-pointer hover:border-blue-400 focus:ring-1 focus:ring-blue-500 outline-none"
+              title="Date du PDA (modifiable ou automatique)"
+            />
+            <button
+              type="button"
+              onClick={() => onUpdatePda({ ...pda, date: getTodayIsoDate() })}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer flex items-center gap-1 ${
+                (pda.date === getTodayIsoDate() || !pda.date)
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-2xs'
+                  : 'bg-white text-blue-800 border-blue-300 hover:bg-blue-50'
+              }`}
+              title="Mettre automatiquement à la date d'aujourd'hui"
+            >
+              <span>⚡</span>
+              <span>Aujourd'hui</span>
+            </button>
+          </div>
         </div>
       </div>
 

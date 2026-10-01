@@ -4,6 +4,7 @@ import { OfficialPdaContainer } from './components/OfficialPdaContainer';
 import { DeclarationOfArrival } from './components/DeclarationOfArrival';
 import { StatementOfFacts } from './components/StatementOfFacts';
 import { BerthingRequest } from './components/BerthingRequest';
+import { BillOfLading } from './components/BillOfLading';
 import { DashboardView } from './components/DashboardView';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { AutoSaveIndicator } from './components/AutoSaveIndicator';
@@ -15,92 +16,50 @@ import {
   ArrivalDeclarationModel,
   createDefaultArrivalDeclaration,
   BerthingRequestModel,
-  createDefaultBerthingRequest
+  createDefaultBerthingRequest,
+  CongenbillModel,
+  createDefaultCongenbill
 } from './types/pda';
 import { createDefaultOfficialPda, SOCOTU_BRANCHES } from './data/tunisianPorts';
-import { calculatePortDues, calculatePortExpenses, calcVesselMetrics, getDefaultMooringLines } from './utils/calculations';
+import { calculatePortDues, calculatePortExpenses, calcVesselMetrics, getDefaultMooringLines, getTodayIsoDate } from './utils/calculations';
 
 const V6_KEY = 'SOCOTU_PDA_V6_HISTORY';
 const DECLARATION_KEY = 'SOCOTU_ARRIVAL_DECLARATION';
 const BERTHING_KEY = 'SOCOTU_BERTHING_REQUEST';
+const CONGENBILL_KEY = 'SOCOTU_CONGENBILL_V1';
 
 function ensureUpdatedPda(p: OfficialPdaModel): OfficialPdaModel {
   try {
-    if (!p || !p.vessel || !p.portDues) return createDefaultOfficialPda();
+    if (!p || !p.vessel) return createDefaultOfficialPda();
     
-    // Auto-update to new official vessel dimensions if at old placeholder
-    let vessel = p.vessel;
-    if (vessel.loa === 127.87 || vessel.loa === 105.5 || vessel.loa === 138.07 || vessel.loa === 140.00 || !vessel.loa) {
-      const loa = 160.00;
-      const beam = 21.00;
-      const draft = 8.38;
-      const metrics = calcVesselMetrics(loa, beam, draft);
-      vessel = {
-        ...vessel,
-        loa,
-        beam,
-        draft,
-        theorDraft: metrics.theorDraft,
-        actualDraft: metrics.actualDraft,
-        volume: metrics.volume,
-        bracketName: metrics.bracketName,
-        grt: 9556,
-        nrt: 4378,
-        imo: '9370094',
-        callSign: '8PSO7',
-        flag: ''
+    // Automatically ensure date is present (defaults to today's date)
+    const date = p.date || getTodayIsoDate();
+
+    // If port dues or port expenses are missing, provide defaults while preserving user data
+    if (!p.portDues || !p.portExpenses) {
+      const def = createDefaultOfficialPda();
+      return {
+        ...def,
+        ...p,
+        date,
+        vessel: { ...def.vessel, ...p.vessel },
+        portDues: p.portDues || def.portDues,
+        portExpenses: p.portExpenses || def.portExpenses
       };
     }
 
-    const nStayDays = (p.portDues.nStay === 4 || p.portDues.nStay === 5 || !p.portDues.nStay) ? 2 : p.portDues.nStay;
-    const defaultLines = p.portExpenses?.nMooringLines ?? p.portDues?.nMooring ?? getDefaultMooringLines(vessel.volume);
-    const newPortDues = calculatePortDues(
-      vessel.volume,
-      p.portDues.nShelter,
-      nStayDays,
-      p.portDues.nPilot,
-      p.portDues.nTug,
-      defaultLines,
-      p.portDues.mooringPeriod ?? '0',
-      0
-    );
-    // Recalculate accurate JORT N°90 Lamanage (90 € + lines × rate) × 1.19 strictly according to Volume (V)
-    const uMooring = newPortDues.combinedMooringTotalEUR;
-    const nMooring = (p.portExpenses?.nMooring && p.portExpenses.nMooring !== defaultLines) ? p.portExpenses.nMooring : 2;
-
-    const newPortExpenses = calculatePortExpenses(
-      newPortDues.subtotalPortDuesEUR,
-      uMooring,
-      nMooring,
-      p.portExpenses?.uWatchEUR ?? 178.50,
-      p.portExpenses?.nWatch ?? nStayDays,
-      p.portExpenses?.uGarbEUR ?? 150,
-      p.portExpenses?.nGarb ?? 1,
-      p.portExpenses?.agencyFeesEUR ?? 1500,
-      p.portExpenses?.currencyControlRate ?? 0,
-      p.portExpenses?.additionalServices ?? [],
-      p.exchangeRate ?? 1.20,
-      defaultLines
-    );
-    let restrictions = p.restrictions;
-    if (!restrictions || p.port === 'Sousse' && (restrictions.includes('160.00') || restrictions.includes('Salt or Silica Sand'))) {
-      restrictions = SOCOTU_BRANCHES.Sousse.restrictions;
-    }
-
+    // Preserve user data and guarantee automatic valid date
     return {
       ...p,
-      vessel,
-      restrictions,
-      portDues: newPortDues,
-      portExpenses: newPortExpenses
+      date
     };
   } catch (e) {
-    return p;
+    return p || createDefaultOfficialPda();
   }
 }
 
 export default function App() {
-  const [activeVolet, setActiveVolet] = useState<'pda' | 'arrival' | 'sof' | 'berthing' | 'history'>('pda');
+  const [activeVolet, setActiveVolet] = useState<'pda' | 'arrival' | 'sof' | 'berthing' | 'bol' | 'history'>('pda');
 
   const [history, setHistory] = useState<OfficialPdaModel[]>(() => {
     try {
@@ -108,7 +67,11 @@ export default function App() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(ensureUpdatedPda);
+          return parsed.map(ensureUpdatedPda).sort((a, b) => {
+            const timeA = a.savedAt ? new Date(a.savedAt).getTime() : 0;
+            const timeB = b.savedAt ? new Date(b.savedAt).getTime() : 0;
+            return timeB - timeA;
+          });
         }
       }
     } catch (e) {
@@ -147,6 +110,10 @@ export default function App() {
 
   const [berthingRequest, setBerthingRequest] = useState<BerthingRequestModel>(() => {
     try {
+      const autoSaved = loadAutoSavedSession();
+      if (autoSaved.berthing) {
+        return autoSaved.berthing;
+      }
       const stored = localStorage.getItem(BERTHING_KEY);
       if (stored) {
         return JSON.parse(stored);
@@ -157,8 +124,35 @@ export default function App() {
     return createDefaultBerthingRequest(currentPda);
   });
 
-  // Dedicated Auto-Save Hook: persists PDA, Declaration, and SOF states every 30 seconds
-  const { lastSavedAt, isSaving, saveNow } = useAutoSave(currentPda, arrivalDeclaration);
+  const [congenbill, setCongenbill] = useState<CongenbillModel>(() => {
+    try {
+      const stored = localStorage.getItem(CONGENBILL_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to load congenbill from localStorage:', e);
+    }
+    return createDefaultCongenbill(currentPda, arrivalDeclaration);
+  });
+
+  // Dedicated Auto-Save Hook: immediately persists PDA, Declaration, SOF, and Berthing states on any change
+  const { lastSavedAt, isSaving, saveNow } = useAutoSave(
+    currentPda,
+    arrivalDeclaration,
+    berthingRequest,
+    (meta) => {
+      setHistory(prev => {
+        const idx = prev.findIndex(item => item.ref === currentPda.ref);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = { ...currentPda, savedAt: meta.lastSavedAt };
+          return copy;
+        }
+        return [{ ...currentPda, savedAt: meta.lastSavedAt }, ...prev];
+      });
+    }
+  );
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -189,63 +183,302 @@ export default function App() {
     }
   }, [berthingRequest]);
 
+  // Auto-sync congenbill with localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONGENBILL_KEY, JSON.stringify(congenbill));
+    } catch (e) {
+      console.error('Failed to save congenbill to localStorage:', e);
+    }
+  }, [congenbill]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2800);
   };
 
-  // Sync vessel name, cargo, weight and port to arrival declaration & berthing request when PDA changes
+  const handleUpdateCongenbill = (updated: CongenbillModel) => {
+    setCongenbill(updated);
+  };
+
+  // 1. Sync from PDA to Declaration, Berthing & Congenbill
   const handleUpdatePda = (updated: OfficialPdaModel) => {
     setCurrentPda(updated);
-    setArrivalDeclaration(prev => ({
+    setHistory(prev => {
+      const existingIdx = prev.findIndex(item => item.ref === updated.ref);
+      if (existingIdx >= 0) {
+        const copy = [...prev];
+        copy[existingIdx] = updated;
+        return copy;
+      }
+      return [updated, ...prev];
+    });
+
+    // Auto-sync to Congenbill
+    setCongenbill(prev => ({
       ...prev,
-      vesselName: updated.vessel.name || prev.vesselName,
-      portOfCall: updated.port || prev.portOfCall,
-      imoNumber: updated.vessel.imo || prev.imoNumber,
-      callSign: updated.vessel.callSign || prev.callSign,
-      flag: updated.vessel.flag || prev.flag,
-      grt: updated.vessel.grt || prev.grt,
-      nrt: updated.vessel.nrt || prev.nrt,
-      loa: updated.vessel.loa || prev.loa,
-      beam: updated.vessel.beam || prev.beam,
-      volume: updated.vessel.volume || prev.volume,
-      arrivalDraftAft: updated.vessel.actualDraft || prev.arrivalDraftAft,
-      cargoNature: updated.vessel.cargo || prev.cargoNature,
-      cargoOperation: updated.vessel.cargoOperation || prev.cargoOperation,
-      cargoQuantityDischarge: updated.vessel.weightCargo || prev.cargoQuantityDischarge
+      oceanVessel: updated.vessel?.name ?? prev.oceanVessel,
+      portOfDischarge: `PORT OF ${(updated.port || 'SOUSSE').toUpperCase()}, TUNISIA`,
+      grossWeightKg: updated.vessel?.weightCargo ?? prev.grossWeightKg,
+      descriptionOfPackagesAndGoods: updated.vessel?.cargo
+        ? `BULK CARGO SAID TO BE:\n${updated.vessel.cargo.toUpperCase()}`
+        : prev.descriptionOfPackagesAndGoods
     }));
 
+    // Auto-sync to Arrival Declaration
+    setArrivalDeclaration(prev => ({
+      ...prev,
+      vesselName: updated.vessel?.name ?? prev.vesselName,
+      portOfCall: updated.port || prev.portOfCall,
+      imoNumber: updated.vessel?.imo ?? prev.imoNumber,
+      callSign: updated.vessel?.callSign ?? prev.callSign,
+      flag: updated.vessel?.flag ?? prev.flag,
+      grt: updated.vessel?.grt || prev.grt,
+      nrt: updated.vessel?.nrt || prev.nrt,
+      loa: updated.vessel?.loa || prev.loa,
+      beam: updated.vessel?.beam || prev.beam,
+      volume: updated.vessel?.volume || prev.volume,
+      draft: updated.vessel?.draft || prev.draft,
+      arrivalDraftAft: updated.vessel?.actualDraft || updated.vessel?.draft || prev.arrivalDraftAft,
+      cargoNature: updated.vessel?.cargo ?? prev.cargoNature,
+      cargo: updated.vessel?.cargo ?? prev.cargo,
+      cargoOperation: updated.vessel?.cargoOperation || prev.cargoOperation,
+      cargoQuantityDischarge: updated.vessel?.weightCargo ?? prev.cargoQuantityDischarge,
+      qty: updated.vessel?.weightCargo ?? prev.qty,
+      shipOwner: updated.vesselOwner ?? prev.shipOwner,
+      owner: updated.vesselOwner ?? prev.owner
+    }));
+
+    // Auto-sync to Berthing Request
     setBerthingRequest(prev => {
       const portName = updated.port || prev.port;
       const cityName = portName.toUpperCase();
+      const vName = updated.vessel?.name || prev.vesselName;
 
-      let vesselStr = prev.vesselName;
-      if (updated.vessel?.name) {
-        const raw = updated.vessel.name.trim();
-        vesselStr = raw.toUpperCase().startsWith('M/V') || raw.toUpperCase().startsWith('MV')
-          ? raw
-          : `M/V « ${raw} »`;
+      let accostageStr = '';
+      if (updated.vessel?.cargo || updated.vessel?.weightCargo) {
+        const op = updated.vessel?.cargoOperation === 'Loading' ? 'EMBARQUEMENT' : 'DEBARQUEMENT';
+        const weight = updated.vessel?.weightCargo || '';
+        const cargo = updated.vessel?.cargo || '';
+        accostageStr = `${op} ${weight} ${cargo}`.trim();
       }
-
-      // Synchronize cargaison (cargo) and poids (weight) with PDA
-      const op = updated.vessel?.cargoOperation === 'Discharging' ? 'DEBARQUEMENT' : 'EMBARQUEMENT';
-      const weightRaw = updated.vessel?.weightCargo ? updated.vessel.weightCargo.replace(/\s*MTS/i, '').trim() : '7500';
-      const cargoName = updated.vessel?.cargo ? updated.vessel.cargo : 'sable';
-      const accostageStr = `${op} ${weightRaw} MTS ${cargoName}  EN VRAC`;
 
       return {
         ...prev,
         port: portName,
         city: cityName,
         recipient: `Monsieur le Commandant Du Port De ${portName}`,
-        vesselName: vesselStr,
-        accostagePour: accostageStr,
+        vesselName: vName,
+        accostagePour: accostageStr || prev.accostagePour,
         agencySignOff: `SOCOTU ${cityName}`,
-        loa: updated.vessel.loa || prev.loa,
-        beam: updated.vessel.beam || prev.beam,
-        maxDraft: updated.vessel.draft || updated.vessel.actualDraft || prev.maxDraft
+        loa: updated.vessel?.loa || prev.loa,
+        beam: updated.vessel?.beam || prev.beam,
+        maxDraft: updated.vessel?.draft || updated.vessel?.actualDraft || prev.maxDraft
       };
     });
+  };
+
+  // 2. Sync from Declaration / SOF to PDA and Berthing
+  const handleUpdateDeclaration = (updated: ArrivalDeclarationModel) => {
+    setArrivalDeclaration(updated);
+
+    // Sync back to PDA
+    setCurrentPda(prevPda => {
+      let v = { ...prevPda.vessel };
+      let changed = false;
+
+      if (updated.vesselName !== undefined && updated.vesselName !== v.name) {
+        v.name = updated.vesselName;
+        changed = true;
+      }
+      if (updated.imoNumber !== undefined && updated.imoNumber !== v.imo) {
+        v.imo = updated.imoNumber;
+        changed = true;
+      }
+      if (updated.callSign !== undefined && updated.callSign !== v.callSign) {
+        v.callSign = updated.callSign;
+        changed = true;
+      }
+      if (updated.flag !== undefined && updated.flag !== v.flag) {
+        v.flag = updated.flag;
+        changed = true;
+      }
+      if (updated.grt && updated.grt !== v.grt) {
+        v.grt = updated.grt;
+        changed = true;
+      }
+      if (updated.nrt && updated.nrt !== v.nrt) {
+        v.nrt = updated.nrt;
+        changed = true;
+      }
+      if (updated.loa && updated.loa !== v.loa) {
+        v.loa = updated.loa;
+        changed = true;
+      }
+      if (updated.beam && updated.beam !== v.beam) {
+        v.beam = updated.beam;
+        changed = true;
+      }
+      const newDraft = updated.draft || updated.arrivalDraftAft;
+      if (newDraft && newDraft !== v.draft) {
+        v.draft = newDraft;
+        changed = true;
+      }
+      const newCargo = updated.cargoNature ?? updated.cargo;
+      if (newCargo !== undefined && newCargo !== v.cargo) {
+        v.cargo = newCargo;
+        changed = true;
+      }
+      if (updated.cargoOperation && updated.cargoOperation !== v.cargoOperation) {
+        v.cargoOperation = updated.cargoOperation;
+        changed = true;
+      }
+      const newQty = updated.cargoQuantityDischarge ?? updated.qty;
+      if (newQty !== undefined && newQty !== v.weightCargo) {
+        v.weightCargo = newQty;
+        changed = true;
+      }
+      const newOwner = updated.shipOwner ?? updated.owner;
+      let newPdaOwner = prevPda.vesselOwner;
+      if (newOwner !== undefined && newOwner !== prevPda.vesselOwner) {
+        newPdaOwner = newOwner;
+        changed = true;
+      }
+      let newPort = prevPda.port;
+      if (updated.portOfCall && updated.portOfCall !== prevPda.port) {
+        newPort = updated.portOfCall;
+        changed = true;
+      }
+
+      if (!changed) return prevPda;
+
+      const metrics = calcVesselMetrics(v.loa, v.beam, v.draft);
+      v.theorDraft = metrics.theorDraft;
+      v.actualDraft = metrics.actualDraft;
+      v.volume = metrics.volume;
+      v.bracketName = metrics.bracketName;
+
+      return {
+        ...prevPda,
+        port: newPort,
+        vesselOwner: newPdaOwner,
+        vessel: v
+      };
+    });
+
+    // Sync back to Berthing Request
+    setBerthingRequest(prevBerthing => {
+      const portName = updated.portOfCall || prevBerthing.port;
+      const cityName = portName.toUpperCase();
+      let berthingDate = prevBerthing.berthingDate;
+      let berthingTime = prevBerthing.berthingTime;
+
+      // Extract date and time from berthedAllFast / allFastTime if available
+      const allFastVal = updated.berthedAllFast || updated.allFastTime || updated.allfast;
+      if (allFastVal) {
+        const m = allFastVal.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+        if (m) {
+          const [, y, mo, d, h, mi] = m;
+          berthingDate = `${d}/${mo}/${y}`;
+          if (h && mi) berthingTime = `${h}:${mi}`;
+        }
+      }
+
+      let accostageStr = prevBerthing.accostagePour;
+      const cargoName = updated.cargoNature || updated.cargo;
+      const cargoQty = updated.cargoQuantityDischarge || updated.qty;
+      if (cargoName || cargoQty) {
+        const op = updated.cargoOperation === 'Loading' ? 'EMBARQUEMENT' : 'DEBARQUEMENT';
+        accostageStr = `${op} ${cargoQty || ''} ${cargoName || ''}`.trim();
+      }
+
+      return {
+        ...prevBerthing,
+        port: portName,
+        city: cityName,
+        recipient: `Monsieur le Commandant Du Port De ${portName}`,
+        vesselName: updated.vesselName || prevBerthing.vesselName,
+        desiredBerth: updated.berthAssigned || prevBerthing.desiredBerth,
+        loa: updated.loa || prevBerthing.loa,
+        beam: updated.beam || prevBerthing.beam,
+        maxDraft: updated.draft || updated.arrivalDraftAft || prevBerthing.maxDraft,
+        berthingDate,
+        berthingTime,
+        accostagePour: accostageStr,
+        agencySignOff: `SOCOTU ${cityName}`
+      };
+    });
+
+    // Sync back to Congenbill
+    setCongenbill(prev => ({
+      ...prev,
+      oceanVessel: updated.vesselName || prev.oceanVessel,
+      portOfLoading: updated.lastPort || prev.portOfLoading,
+      portOfDischarge: `PORT OF ${(updated.portOfCall || 'SOUSSE').toUpperCase()}, TUNISIA`,
+      grossWeightKg: updated.qty || updated.cargoQuantityDischarge || prev.grossWeightKg,
+      descriptionOfPackagesAndGoods: updated.cargo
+        ? `BULK CARGO SAID TO BE:\n${updated.cargo.toUpperCase()}`
+        : prev.descriptionOfPackagesAndGoods,
+      masterName: updated.master || updated.masterName || prev.masterName,
+      freightPayableAsPerCharterPartyDate: updated.charterpartyDate || prev.freightPayableAsPerCharterPartyDate
+    }));
+  };
+
+  // 3. Sync from Berthing Request to PDA and Declaration
+  const handleUpdateBerthing = (updated: BerthingRequestModel) => {
+    setBerthingRequest(updated);
+
+    // Sync back to PDA
+    setCurrentPda(prevPda => {
+      let v = { ...prevPda.vessel };
+      let changed = false;
+
+      if (updated.vesselName && updated.vesselName !== v.name) {
+        v.name = updated.vesselName;
+        changed = true;
+      }
+      if (updated.port && updated.port !== prevPda.port) {
+        changed = true;
+      }
+      if (updated.loa && updated.loa !== v.loa) {
+        v.loa = updated.loa;
+        changed = true;
+      }
+      if (updated.beam && updated.beam !== v.beam) {
+        v.beam = updated.beam;
+        changed = true;
+      }
+      if (updated.maxDraft && updated.maxDraft !== v.draft) {
+        v.draft = updated.maxDraft;
+        changed = true;
+      }
+
+      if (!changed) return prevPda;
+
+      const metrics = calcVesselMetrics(v.loa, v.beam, v.draft);
+      v.theorDraft = metrics.theorDraft;
+      v.actualDraft = metrics.actualDraft;
+      v.volume = metrics.volume;
+      v.bracketName = metrics.bracketName;
+
+      return {
+        ...prevPda,
+        port: updated.port || prevPda.port,
+        vessel: v
+      };
+    });
+
+    // Sync back to Declaration
+    setArrivalDeclaration(prevDecl => ({
+      ...prevDecl,
+      vesselName: updated.vesselName || prevDecl.vesselName,
+      portOfCall: updated.port || prevDecl.portOfCall,
+      berthAssigned: updated.desiredBerth || prevDecl.berthAssigned,
+      loa: updated.loa || prevDecl.loa,
+      beam: updated.beam || prevDecl.beam,
+      draft: updated.maxDraft || prevDecl.draft,
+      arrivalDraftAft: updated.maxDraft || prevDecl.arrivalDraftAft
+    }));
   };
 
   // Save current PDA
@@ -282,6 +515,13 @@ export default function App() {
         showToast('✓ Demande d\'accostage enregistrée avec succès');
       } catch (e) {
         showToast('Error saving berthing request');
+      }
+    } else if (activeVolet === 'bol') {
+      try {
+        localStorage.setItem(CONGENBILL_KEY, JSON.stringify(congenbill));
+        showToast('✓ Bill of Lading (CONGENBILL 94) enregistré avec succès');
+      } catch (e) {
+        showToast('Error saving Bill of Lading');
       }
     } else {
       handleSavePda();
@@ -361,6 +601,18 @@ export default function App() {
           </button>
           <button
             type="button"
+            onClick={() => setActiveVolet('bol')}
+            className={`px-3 py-1.5 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+              activeVolet === 'bol'
+                ? 'bg-[#0f2c59] text-white shadow-sm'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <span>📜</span>
+            <span>5. Bill of Lading (CONGENBILL 94)</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveVolet('history')}
             className={`px-3 py-1.5 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
               activeVolet === 'history'
@@ -373,7 +625,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* Real-time Auto-Save Indicator (Persists every 30s) */}
+        {/* Real-time Auto-Save Indicator */}
         <div className="flex items-center gap-2">
           <AutoSaveIndicator
             lastSavedAt={lastSavedAt}
@@ -409,10 +661,11 @@ export default function App() {
           <DeclarationOfArrival
             pda={currentPda}
             declaration={arrivalDeclaration}
-            onUpdateDeclaration={setArrivalDeclaration}
+            onUpdateDeclaration={handleUpdateDeclaration}
             onBackToPda={() => setActiveVolet('pda')}
             onGoToSof={() => setActiveVolet('sof')}
             onGoToBerthing={() => setActiveVolet('berthing')}
+            onGoToBol={() => setActiveVolet('bol')}
           />
         )}
 
@@ -420,9 +673,10 @@ export default function App() {
           <StatementOfFacts
             pda={currentPda}
             declaration={arrivalDeclaration}
-            onUpdateDeclaration={setArrivalDeclaration}
+            onUpdateDeclaration={handleUpdateDeclaration}
             onBackToPda={() => setActiveVolet('pda')}
             onGoToBerthing={() => setActiveVolet('berthing')}
+            onGoToBol={() => setActiveVolet('bol')}
           />
         )}
 
@@ -430,9 +684,23 @@ export default function App() {
           <BerthingRequest
             pda={currentPda}
             berthing={berthingRequest}
-            onUpdateBerthing={setBerthingRequest}
+            onUpdateBerthing={handleUpdateBerthing}
             onBackToPda={() => setActiveVolet('pda')}
             onGoToArrival={() => setActiveVolet('arrival')}
+          />
+        )}
+
+        {activeVolet === 'bol' && (
+          <BillOfLading
+            pda={currentPda}
+            declaration={arrivalDeclaration}
+            congenbill={congenbill}
+            onUpdateCongenbill={handleUpdateCongenbill}
+            onUpdateDeclaration={handleUpdateDeclaration}
+            onUpdatePda={handleUpdatePda}
+            onBackToPda={() => setActiveVolet('pda')}
+            onGoToArrival={() => setActiveVolet('arrival')}
+            onGoToSof={() => setActiveVolet('sof')}
           />
         )}
 
@@ -444,10 +712,10 @@ export default function App() {
         )}
       </main>
 
-      {/* Bar d'actions inférieure fixe & toujours visible : Print, Save, Share (print:hidden) */}
+      {/* Bar d'actions inférieure fixe & toujours visible : Print, Save (print:hidden) */}
       <div className="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md py-3 px-4 border-t-2 border-slate-300 shadow-2xl print:hidden mt-8">
         <div className="max-w-[1000px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Les 3 boutons principaux actifs */}
+          {/* Les 2 boutons principaux actifs */}
           <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start flex-wrap">
             {/* 1. Print */}
             <button
@@ -465,7 +733,7 @@ export default function App() {
               type="button"
               onClick={handleSaveActive}
               className="bg-[#059669] hover:bg-[#047857] active:bg-emerald-900 cursor-pointer text-white px-6 py-2.5 rounded-lg text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 border border-emerald-700 grow sm:grow-0 justify-center"
-              title="Save document"
+              title="Save document locally"
             >
               <span className="text-base">💾</span>
               <span>Save</span>

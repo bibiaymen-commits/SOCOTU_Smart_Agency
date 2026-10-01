@@ -20,8 +20,8 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
       onClick={onSaveNow}
       title={
         lastSavedAt
-          ? `Auto-save every 30s • Last saved at ${formatTime(lastSavedAt)}. Click to save now.`
-          : 'Auto-save active every 30s. Click to save now.'
+          ? `All changes are saved automatically • Last saved at ${formatTime(lastSavedAt)}. Click to force save now.`
+          : 'Real-time auto-save active for all changes. Click to force save now.'
       }
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-medium border shadow-xs transition-all cursor-pointer select-none ${
         isSaving
@@ -47,15 +47,15 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
       <span className="font-semibold tracking-tight">
         {isSaving ? (
           <span className="flex items-center gap-1">
-            <span>Saving...</span>
+            <span>Saving changes...</span>
           </span>
         ) : lastSavedAt ? (
           <span className="flex items-center gap-1">
-            <span className="text-slate-500 hidden sm:inline">Auto-saved</span>
+            <span className="text-emerald-900 font-bold hidden sm:inline">✓ Saved</span>
             <span className="font-mono text-[10px] text-emerald-700">{formatTime(lastSavedAt)}</span>
           </span>
         ) : (
-          <span className="text-emerald-700">Auto-save 30s active</span>
+          <span className="text-emerald-700">✓ All changes saved</span>
         )}
       </span>
     </div>

@@ -9,19 +9,20 @@ interface StatementOfFactsProps {
   onUpdateDeclaration: (decl: ArrivalDeclarationModel) => void;
   onBackToPda: () => void;
   onGoToBerthing?: () => void;
+  onGoToBol?: () => void;
 }
 
 // Standard BIMCO Chronological Port Milestones Checklist
 const BIMCO_STANDARD_EVENTS = [
   "ETA NOTICE TENDERED (72H / 48H / 24H)",
-  "ARRIVED ROADSTEAD / OUTER ANCHORAGE / PORT LIMITS",
-  "DROPPED ANCHOR / ANCHORED",
+  "END OF SEA PASSAGE (EOSP)",
+  "DROPPED ANCHOR",
   "NOTICE OF READINESS (NOR) TENDERED",
   "NOTICE OF READINESS (NOR) ACCEPTED / RECEIVED",
-  "INWARD PILOT ON BOARD",
-  "ANCHOR AWEIGH (HEAVED UP)",
+  "HEAVE UP ANCHOR (ANCHOR AWEIGH)",
+  "PILOT ON BOARD (INWARD PILOT)",
   "FIRST LINE ASHORE",
-  "ALL FAST / BERTHED ALONGSIDE",
+  "BERTHED ALL FAST",
   "GANGWAY DOWN & SAFE ACCESS SECURED",
   "PORT AUTHORITIES ON BOARD (CUSTOMS, IMMIGRATION, POLICE)",
   "FREE PRATIQUE GRANTED / HEALTH CLEARANCE COMPLETED",
@@ -51,40 +52,48 @@ function getTodayFormatted(): { date: string; time: string; day: string } {
   return { date, time, day };
 }
 
+function splitIsoDateTime(iso?: string): { date: string; time: string } | null {
+  if (!iso) return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (m) {
+    const [, y, mo, d, h, mi] = m;
+    return { date: `${d}/${mo}/${y}`, time: `${h}:${mi}` };
+  }
+  return null;
+}
+
 export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
   pda,
   declaration,
   onUpdateDeclaration,
   onBackToPda,
-  onGoToBerthing
+  onGoToBerthing,
+  onGoToBol
 }) => {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const currentBranch = SOCOTU_BRANCHES[declaration.portOfCall] || SOCOTU_BRANCHES.Sousse;
   const todayNow = getTodayFormatted();
-  const currentPortEvents = declaration.portEvents || {};
 
-  // Default BIMCO stoppages
-  const currentStoppages = declaration.stoppages && declaration.stoppages.length > 0
-    ? declaration.stoppages
-    : [
-        {
-          id: 'stop-1',
-          fromDate: todayNow.date,
-          fromTime: '12:00',
-          toDate: todayNow.date,
-          toTime: '13:00',
-          reason: 'Meal break / Stevedores shift change'
-        },
-        {
-          id: 'stop-2',
-          fromDate: todayNow.date,
-          fromTime: '18:30',
-          toDate: todayNow.date,
-          toTime: '19:15',
-          reason: 'Rain / Bad weather precaution (Hatches closed)'
-        }
-      ];
+  const eospSplit = splitIsoDateTime(declaration.eosp);
+  const droppedAnchorSplit = splitIsoDateTime(declaration.droppedAnchor);
+  const heaveUpAnchorSplit = splitIsoDateTime(declaration.heaveUpAnchor);
+  const pilotSplit = splitIsoDateTime(declaration.pilotOnBoard || declaration.pilotBoardingTime || declaration.pilot);
+  const firstLineSplit = splitIsoDateTime(declaration.firstLineAshore || declaration.firstline);
+  const berthedSplit = splitIsoDateTime(declaration.berthedAllFast || declaration.allFastTime || declaration.allfast);
+
+  const currentPortEvents: Record<string, { date: string; time: string }> = {
+    ...(eospSplit ? { "END OF SEA PASSAGE (EOSP)": eospSplit } : {}),
+    ...(droppedAnchorSplit ? { "DROPPED ANCHOR": droppedAnchorSplit } : {}),
+    ...(heaveUpAnchorSplit ? { "HEAVE UP ANCHOR (ANCHOR AWEIGH)": heaveUpAnchorSplit } : {}),
+    ...(pilotSplit ? { "PILOT ON BOARD (INWARD PILOT)": pilotSplit } : {}),
+    ...(firstLineSplit ? { "FIRST LINE ASHORE": firstLineSplit } : {}),
+    ...(berthedSplit ? { "BERTHED ALL FAST": berthedSplit } : {}),
+    ...(declaration.portEvents || {})
+  };
+
+  // Default BIMCO stoppages: empty if not recorded
+  const currentStoppages = declaration.stoppages || [];
 
   const handleChange = <K extends keyof ArrivalDeclarationModel>(
     field: K,
@@ -109,8 +118,24 @@ export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
         [key]: val
       }
     };
+
+    let extra: Partial<ArrivalDeclarationModel> = {};
+    if (eventName === 'BERTHED ALL FAST') {
+      const ev = updated['BERTHED ALL FAST'];
+      if (ev.date && ev.time) {
+        const parts = ev.date.split('/');
+        if (parts.length === 3) {
+          const iso = `${parts[2]}-${parts[1]}-${parts[0]}T${ev.time}`;
+          extra.berthedAllFast = iso;
+          extra.allFastTime = iso;
+          extra.allfast = iso;
+        }
+      }
+    }
+
     onUpdateDeclaration({
       ...declaration,
+      ...extra,
       portEvents: updated
     });
   };
@@ -124,8 +149,20 @@ export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
         time: now.time
       }
     };
+
+    let extra: Partial<ArrivalDeclarationModel> = {};
+    if (eventName === 'BERTHED ALL FAST') {
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      extra.berthedAllFast = iso;
+      extra.allFastTime = iso;
+      extra.allfast = iso;
+    }
+
     onUpdateDeclaration({
       ...declaration,
+      ...extra,
       portEvents: updated
     });
     showStatus(`✓ ${eventName} set to ${now.date} ${now.time}`);
@@ -214,6 +251,15 @@ export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
               className="text-xs font-semibold text-[#0f2c59] hover:text-[#1d4ed8] bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded transition cursor-pointer flex items-center gap-1"
             >
               <span>Accostage →</span>
+            </button>
+          )}
+          {onGoToBol && (
+            <button
+              type="button"
+              onClick={onGoToBol}
+              className="text-xs font-bold text-white bg-[#0f2c59] hover:bg-blue-900 px-3 py-1.5 rounded transition cursor-pointer shadow-xs"
+            >
+              Bill of Lading →
             </button>
           )}
         </div>
@@ -595,8 +641,15 @@ export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {currentStoppages.map((stop) => (
-                  <tr key={stop.id}>
+                {currentStoppages.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="border border-slate-300 p-4 text-center italic text-slate-400 bg-slate-50/40">
+                      No stoppages or interruptions recorded. (Cellules vides par défaut)
+                    </td>
+                  </tr>
+                ) : (
+                  currentStoppages.map((stop) => (
+                    <tr key={stop.id}>
                     <td className="border border-slate-300 p-0.5 text-center">
                       <div className="flex items-center gap-0.5 justify-center">
                         <input
@@ -714,7 +767,7 @@ export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -772,66 +825,171 @@ export const StatementOfFacts: React.FC<StatementOfFactsProps> = ({
         </div>
 
         {/* SECTION 5: DRAFTS & BUNKERS RECORD (ARRIVAL & DEPARTURE) */}
-        <div className="grid grid-cols-2 gap-3 mb-3 text-[9.5px]">
-          {/* Drafts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 text-[9.5px]">
+          {/* Drafts: Arrival (from Declaration) & Departure (to fill during SOF prep) */}
           <div className="border border-slate-300">
-            <div className="bg-[#eef2f6] font-bold px-2 py-0.5 text-[10px] text-[#0f2c59] uppercase border-b border-slate-300">
-              Vessel Drafts (Meters)
+            <div className="bg-[#eef2f6] font-bold px-2 py-0.5 text-[10px] text-[#0f2c59] uppercase border-b border-slate-300 flex justify-between items-center">
+              <span>Vessel Drafts (Meters)</span>
+              <span className="text-[8px] text-slate-500 font-normal">Arrivée synchronisée & Sortie à remplir</span>
             </div>
-            <div className="p-1.5 grid grid-cols-2 gap-2">
-              <div>
-                <span className="font-semibold text-slate-700">Arrival Fwd :</span>
-                <input
-                  type="text"
-                  value={declaration.arrivalDraftFwd ? `${declaration.arrivalDraftFwd} m` : '6.50 m'}
-                  onChange={e => handleChange('arrivalDraftFwd', parseFloat(e.target.value) || 0)}
-                  className="w-full border border-slate-300 rounded px-1 text-[9.5px] font-mono mt-0.5 bg-white"
-                />
+            <div className="p-1.5 grid grid-cols-2 gap-3">
+              {/* Draft on Arrival */}
+              <div className="bg-slate-50 p-1.5 rounded border border-slate-200">
+                <div className="font-bold text-[#0f2c59] text-[9px] uppercase mb-1">
+                  On Arrival (Déclaration d'Arrivée)
+                </div>
+                <div className="space-y-1">
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">Arrival FWD:</span>
+                    <input
+                      type="text"
+                      placeholder="e.g. 6.20 m"
+                      value={declaration.arrivalDraftFwd ? `${declaration.arrivalDraftFwd} m` : ''}
+                      onChange={e => handleChange('arrivalDraftFwd', parseFloat(e.target.value) || 0)}
+                      className="w-full border border-slate-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">Arrival AFT:</span>
+                    <input
+                      type="text"
+                      placeholder="e.g. 6.50 m"
+                      value={declaration.arrivalDraftAft ? `${declaration.arrivalDraftAft} m` : (declaration.draft ? `${declaration.draft} m` : '')}
+                      onChange={e => handleChange('arrivalDraftAft', parseFloat(e.target.value) || 0)}
+                      className="w-full border border-slate-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono font-bold text-amber-950 bg-white"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-semibold text-slate-700">Arrival Aft :</span>
-                <input
-                  type="text"
-                  value={declaration.arrivalDraftAft ? `${declaration.arrivalDraftAft} m` : '8.38 m'}
-                  onChange={e => handleChange('arrivalDraftAft', parseFloat(e.target.value) || 0)}
-                  className="w-full border border-slate-300 rounded px-1 text-[9.5px] font-mono mt-0.5 bg-white"
-                />
+
+              {/* Draft on Departure */}
+              <div className="bg-amber-50/40 p-1.5 rounded border border-amber-200">
+                <div className="font-bold text-amber-900 text-[9px] uppercase mb-1 flex items-center justify-between">
+                  <span>On Departure (Sortie)</span>
+                  <span className="text-[7.5px] text-amber-700 bg-amber-100 px-1 rounded">À remplir</span>
+                </div>
+                <div className="space-y-1">
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">Departure FWD:</span>
+                    <input
+                      type="text"
+                      placeholder="FWD à la sortie (m)"
+                      value={declaration.draftDepFwd || ''}
+                      onChange={e => handleChange('draftDepFwd', e.target.value)}
+                      className="w-full border border-amber-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white focus:bg-amber-50"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">Departure AFT:</span>
+                    <input
+                      type="text"
+                      placeholder="AFT à la sortie (m)"
+                      value={declaration.draftDepAft || declaration.draftDep || ''}
+                      onChange={e => {
+                        handleChange('draftDepAft', e.target.value);
+                        handleChange('draftDep', e.target.value);
+                      }}
+                      className="w-full border border-amber-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono font-bold bg-white focus:bg-amber-50"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Bunkers */}
+          {/* Bunkers: Arrival (from Declaration) & Departure (to fill during SOF prep) */}
           <div className="border border-slate-300">
-            <div className="bg-[#eef2f6] font-bold px-2 py-0.5 text-[10px] text-[#0f2c59] uppercase border-b border-slate-300">
-              Bunkers & Water ROB (Arrival)
+            <div className="bg-[#eef2f6] font-bold px-2 py-0.5 text-[10px] text-[#0f2c59] uppercase border-b border-slate-300 flex justify-between items-center">
+              <span>Bunkers & Water ROB (MT)</span>
+              <span className="text-[8px] text-slate-500 font-normal">Arrivée synchronisée & Sortie à remplir</span>
             </div>
-            <div className="p-1.5 grid grid-cols-3 gap-2">
-              <div>
-                <span className="font-semibold text-slate-700">VLSFO :</span>
-                <input
-                  type="text"
-                  value={declaration.vlsfoROB || '145 MT'}
-                  onChange={e => handleChange('vlsfoROB', e.target.value)}
-                  className="w-full border border-slate-300 rounded px-1 text-[9.5px] font-mono mt-0.5 bg-white"
-                />
+            <div className="p-1.5 grid grid-cols-2 gap-3">
+              {/* Bunkers on Arrival */}
+              <div className="bg-slate-50 p-1.5 rounded border border-slate-200">
+                <div className="font-bold text-[#0f2c59] text-[9px] uppercase mb-1">
+                  ROB on Arrival (Déclaration)
+                </div>
+                <div className="space-y-1">
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">VLSFO:</span>
+                    <input
+                      type="text"
+                      placeholder="VLSFO Arrivée"
+                      value={declaration.fuelOilArr || declaration.vlsfoROB || ''}
+                      onChange={e => {
+                        handleChange('fuelOilArr', e.target.value);
+                        handleChange('vlsfoROB', e.target.value);
+                      }}
+                      className="w-full border border-slate-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">LSMGO:</span>
+                    <input
+                      type="text"
+                      placeholder="LSMGO Arrivée"
+                      value={declaration.dieselOilArr || declaration.lsmgoROB || ''}
+                      onChange={e => {
+                        handleChange('dieselOilArr', e.target.value);
+                        handleChange('lsmgoROB', e.target.value);
+                      }}
+                      className="w-full border border-slate-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">Fresh Water:</span>
+                    <input
+                      type="text"
+                      placeholder="Eau douce Arrivée"
+                      value={declaration.freshWaterArr || declaration.freshWaterROB || ''}
+                      onChange={e => {
+                        handleChange('freshWaterArr', e.target.value);
+                        handleChange('freshWaterROB', e.target.value);
+                      }}
+                      className="w-full border border-slate-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-semibold text-slate-700">LSMGO :</span>
-                <input
-                  type="text"
-                  value={declaration.lsmgoROB || '38 MT'}
-                  onChange={e => handleChange('lsmgoROB', e.target.value)}
-                  className="w-full border border-slate-300 rounded px-1 text-[9.5px] font-mono mt-0.5 bg-white"
-                />
-              </div>
-              <div>
-                <span className="font-semibold text-slate-700">Fresh Water :</span>
-                <input
-                  type="text"
-                  value={declaration.freshWaterROB || '85 MT'}
-                  onChange={e => handleChange('freshWaterROB', e.target.value)}
-                  className="w-full border border-slate-300 rounded px-1 text-[9.5px] font-mono mt-0.5 bg-white"
-                />
+
+              {/* Bunkers on Departure */}
+              <div className="bg-amber-50/40 p-1.5 rounded border border-amber-200">
+                <div className="font-bold text-amber-900 text-[9px] uppercase mb-1 flex items-center justify-between">
+                  <span>ROB on Departure (Sortie)</span>
+                  <span className="text-[7.5px] text-amber-700 bg-amber-100 px-1 rounded">À remplir</span>
+                </div>
+                <div className="space-y-1">
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">VLSFO Departure:</span>
+                    <input
+                      type="text"
+                      placeholder="VLSFO Sortie"
+                      value={declaration.fuelOilDep || ''}
+                      onChange={e => handleChange('fuelOilDep', e.target.value)}
+                      className="w-full border border-amber-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white focus:bg-amber-50"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">LSMGO Departure:</span>
+                    <input
+                      type="text"
+                      placeholder="LSMGO Sortie"
+                      value={declaration.dieselOilDep || ''}
+                      onChange={e => handleChange('dieselOilDep', e.target.value)}
+                      className="w-full border border-amber-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white focus:bg-amber-50"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 block text-[8px] font-semibold uppercase">Fresh Water Dep:</span>
+                    <input
+                      type="text"
+                      placeholder="Eau douce Sortie"
+                      value={declaration.freshWaterDep || ''}
+                      onChange={e => handleChange('freshWaterDep', e.target.value)}
+                      className="w-full border border-amber-300 rounded px-1.5 py-0.5 text-[9.5px] font-mono bg-white focus:bg-amber-50"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

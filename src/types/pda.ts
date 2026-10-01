@@ -147,6 +147,77 @@ export interface PortExpensesCalculation {
   grandTotalTargetCurr: number;
 }
 
+export interface CongenbillModel {
+  blNumber: string;
+  shipper: string;
+  consignee: string;
+  notifyAddress: string;
+  preCarriageBy: string;
+  placeOfReceipt: string;
+  oceanVessel: string;
+  portOfLoading: string;
+  portOfDischarge: string;
+  placeOfDelivery: string;
+  // Goods description
+  marksAndNumbers: string;
+  descriptionOfPackagesAndGoods: string;
+  grossWeightKg: string;
+  measurementM3: string;
+  deckCargoRemarks: string;
+  // Freight & Charges
+  freightPayableAsPerCharterPartyDate: string;
+  freightPayableAt: 'PREPAID' | 'PAYABLE AT DESTINATION' | string;
+  freightAmount: string;
+  // Originals & Issue
+  numberOfOriginals: string;
+  placeOfIssue: string;
+  dateOfIssue: string;
+  // Signatory
+  signedAs: 'AGENT' | 'MASTER';
+  agentName: string;
+  masterName: string;
+  signatureDate: string;
+}
+
+export function createDefaultCongenbill(
+  pda?: OfficialPdaModel,
+  decl?: ArrivalDeclarationModel
+): CongenbillModel {
+  const today = new Date().toISOString().slice(0, 10);
+  const port = decl?.portOfCall || pda?.port || 'Sousse';
+  const vesselName = decl?.vesselName || pda?.vessel?.name || '';
+  const cargoName = decl?.cargo || decl?.cargoNature || pda?.vessel?.cargo || '';
+  const cargoQty = decl?.qty || decl?.cargoQuantityDischarge || pda?.vessel?.weightCargo || '';
+
+  return {
+    blNumber: 'CONGEN-01',
+    shipper: '',
+    consignee: 'TO ORDER',
+    notifyAddress: 'SAME AS CONSIGNEE',
+    preCarriageBy: '',
+    placeOfReceipt: '',
+    oceanVessel: vesselName,
+    portOfLoading: decl?.lastPort || '',
+    portOfDischarge: `PORT OF ${port.toUpperCase()}, TUNISIA`,
+    placeOfDelivery: '',
+    marksAndNumbers: 'IN BULK',
+    descriptionOfPackagesAndGoods: cargoName ? `BULK CARGO SAID TO BE:\n${cargoName.toUpperCase()}` : '',
+    grossWeightKg: cargoQty,
+    measurementM3: '',
+    deckCargoRemarks: 'SHIPPED ON BOARD INTO THE VESSEL CARGO HOLDS IN APPARENT GOOD ORDER AND CONDITION',
+    freightPayableAsPerCharterPartyDate: decl?.charterpartyDate || '',
+    freightPayableAt: 'PAYABLE AT DESTINATION',
+    freightAmount: 'AS PER CHARTER PARTY',
+    numberOfOriginals: 'THREE (3)',
+    placeOfIssue: port ? `${port}, Tunisia` : 'Tunisia',
+    dateOfIssue: today,
+    signedAs: 'AGENT',
+    agentName: `SOCOTU — Société Commerciale Tunisienne (${port})`,
+    masterName: decl?.master || decl?.masterName || '',
+    signatureDate: today
+  };
+}
+
 export interface OfficialPdaModel {
   id: string;
   ref: string;
@@ -209,6 +280,14 @@ export interface ArrivalDeclarationModel {
   berthAssigned: string;
   pilotBoardingTime: string;
   allFastTime: string;
+  // Specific Arrival Movements & Nautical Timeline
+  eosp?: string;
+  droppedAnchor?: string;
+  heaveUpAnchor?: string;
+  pilotOnBoard?: string;
+  firstLineAshore?: string;
+  berthedAllFast?: string;
+  anchorageDetails?: string;
   // Cargo & Crew
   purposeOfCall: string;
   cargoNature: string;
@@ -240,6 +319,8 @@ export interface ArrivalDeclarationModel {
   freshWaterDep?: string;
   draftArr?: string;
   draftDep?: string;
+  draftDepFwd?: string;
+  draftDepAft?: string;
   // Cargo & Documents
   cargoOperation?: CargoOperation;
   cargoDescription?: string;
@@ -287,84 +368,91 @@ export interface ArrivalDeclarationModel {
 export function createDefaultArrivalDeclaration(pda?: OfficialPdaModel): ArrivalDeclarationModel {
   const today = new Date().toISOString().slice(0, 10);
   const v = pda?.vessel;
-  const draftVal = v?.actualDraft ? +v.actualDraft.toFixed(2) : 6.50;
-  const cargoVal = v?.cargo || 'Bulk Wheat';
-  const qtyVal = v?.weightCargo || '4500';
-  const masterVal = 'Capt. Mohamed Ben Salem';
-  const ownerVal = pda?.vesselOwner || 'Tunisian Shipping Line Co.';
-  const purposeVal = 'Cargo operations';
-  const agentVal = `SOCOTU — ${pda?.port || 'Sousse'} Agency`;
+  const draftVal = v?.actualDraft ? +v.actualDraft.toFixed(2) : (v?.draft || 0);
+  const cargoVal = v?.cargo || '';
+  const qtyVal = v?.weightCargo || '';
+  const ownerVal = pda?.vesselOwner || '';
+  const agentVal = pda?.port ? `SOCOTU — Agence ${pda.port}` : '';
 
   return {
     portOfCall: pda?.port || 'Sousse',
     declarationDate: pda?.date || today,
-    declarationRef: pda ? `ARR-${pda.ref}` : `ARR-${today.replace(/-/g, '')}-001`,
-    vesselName: v?.name || 'MV PONTICA',
-    imoNumber: v?.imo || '9370094',
-    callSign: v?.callSign || '8PSO7',
+    declarationRef: pda ? `ARR-${pda.ref}` : '',
+    vesselName: v?.name || '',
+    imoNumber: v?.imo || '',
+    callSign: v?.callSign || '',
     flag: v?.flag || '',
-    portOfRegistry: pda?.port || 'Sousse',
-    shipType: 'General Cargo / Bulk Carrier',
-    masterName: masterVal,
-    master: masterVal,
+    portOfRegistry: '',
+    shipType: '',
+    masterName: '',
+    master: '',
     shipOwner: ownerVal,
     owner: ownerVal,
-    charterer: 'Carthage Grain Trading Ltd',
+    charterer: '',
     shippingAgent: agentVal,
     agent: agentVal,
-    grt: v?.grt || 9556,
-    nrt: v?.nrt || 4378,
-    dwt: 12000,
-    loa: v?.loa || 140.00,
-    beam: v?.beam || 21.00,
-    volume: v?.volume || 24638,
-    draft: draftVal || 8.38,
-    arrivalDraftFwd: +( (draftVal || 8.38) - 0.3 ).toFixed(2),
-    arrivalDraftAft: draftVal || 8.38,
-    airDraft: 28.5,
-    lastPort: 'Malta (Marsaxlokk)',
-    lastPortDepartureDate: today,
-    nextPort: 'Ravenna (Italy)',
+    grt: v?.grt || 0,
+    nrt: v?.nrt || 0,
+    dwt: 0,
+    loa: v?.loa || 0,
+    beam: v?.beam || 0,
+    volume: v?.volume || 0,
+    draft: draftVal || 0,
+    arrivalDraftFwd: draftVal ? +(Math.max(draftVal - 0.3, 0)).toFixed(2) : 0,
+    arrivalDraftAft: draftVal || 0,
+    airDraft: 0,
+    lastPort: '',
+    lastPortDepartureDate: '',
+    nextPort: '',
     nextPortEta: '',
-    eta: `${pda?.date || today}T06:00`,
-    ata: `${pda?.date || today}T07:30`,
-    berthAssigned: 'Berth No. 2 (Commercial Quay)',
-    pilotBoardingTime: `${pda?.date || today}T06:45`,
-    allFastTime: `${pda?.date || today}T08:15`,
-    purposeOfCall: purposeVal,
-    purpose: purposeVal,
+    eta: '',
+    ata: '',
+    berthAssigned: '',
+    pilotBoardingTime: '',
+    allFastTime: '',
+    // Specific Arrival Movements & Nautical Timeline (remain blank until edited)
+    eosp: '',
+    droppedAnchor: '',
+    heaveUpAnchor: '',
+    pilotOnBoard: '',
+    firstLineAshore: '',
+    berthedAllFast: '',
+    anchorageDetails: '',
+    purposeOfCall: '',
+    purpose: '',
     cargoOperation: v?.cargoOperation || 'Discharging',
     cargoNature: cargoVal,
     cargo: cargoVal,
     cargoQuantityDischarge: qtyVal,
     qty: qtyVal,
-    cargoQuantityLoad: 'NIL',
-    crewCount: 16,
+    cargoQuantityLoad: '',
+    crewCount: 0,
     passengerCount: 0,
-    stowaways: 'None reported',
-    vlsfoROB: '145 MT',
-    lsmgoROB: '38 MT',
-    freshWaterROB: '85 MT',
-    sludgeROB: '6.5 m3',
-    sanitaryCondition: 'All crew healthy — Free Pratique requested',
-    derattingCertExpiry: '2027-01-15',
-    dangerousGoodsCarried: 'NIL / No IMDG cargo on board',
-    remarks: 'I hereby declare that the above particulars are, to the best of my knowledge, correct and complete.',
-    // SOF Events default
-    nor: `${pda?.date || today}T06:15`,
-    pratique: `${pda?.date || today}T08:30`,
-    customs: `${pda?.date || today}T08:45`,
-    pilot: `${pda?.date || today}T06:45`,
-    firstline: `${pda?.date || today}T07:45`,
-    allfast: `${pda?.date || today}T08:15`,
-    cargoStart: `${pda?.date || today}T09:30`,
+    stowaways: '',
+    vlsfoROB: '',
+    lsmgoROB: '',
+    freshWaterROB: '',
+    sludgeROB: '',
+    sanitaryCondition: '',
+    derattingCertExpiry: '',
+    dangerousGoodsCarried: '',
+    remarks: '',
+    // SOF Events default (blank until recorded)
+    nor: '',
+    pratique: '',
+    customs: '',
+    pilot: '',
+    firstline: '',
+    allfast: '',
+    cargoStart: '',
     cargoEnd: '',
     survey: '',
     lastline: '',
     departure: '',
-    sofremarks: 'Vessel berthed port side alongside. Discharging commenced using shore cranes. Weather clear, sea calm.',
-    masterSignatureName: masterVal,
-    agentSignatureName: 'SOCOTU Port Operations Agent'
+    sofremarks: '',
+    stoppages: [],
+    masterSignatureName: '',
+    agentSignatureName: agentVal
   };
 }
 
@@ -393,31 +481,20 @@ export function createDefaultBerthingRequest(pda?: OfficialPdaModel): BerthingRe
   const portName = pda?.port || 'Sousse';
   const cityName = portName.toUpperCase();
   
-  // Convert PDA date (YYYY-MM-DD) to French DD/MM/YYYY if available, else 14/02/2025 as in user request
-  let dateFormatted = '14/02/2025';
+  let dateFormatted = '';
   if (pda?.date && /^\d{4}-\d{2}-\d{2}$/.test(pda.date)) {
     const parts = pda.date.split('-');
     dateFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
-  // Vessel name formatting: M/V « joy x   » or from PDA
-  let vesselStr = 'M/V « joy x   »';
-  if (pda?.vessel?.name) {
-    const raw = pda.vessel.name.trim();
-    if (raw.toUpperCase().startsWith('M/V') || raw.toUpperCase().startsWith('MV')) {
-      vesselStr = raw;
-    } else {
-      vesselStr = `M/V « ${raw} »`;
-    }
-  }
+  const vesselStr = pda?.vessel?.name ? pda.vessel.name.trim() : '';
 
-  // Operation text: EMBARQUEMENT 7500 MTS sable  EN VRAC or from PDA
-  let accostagePourStr = 'EMBARQUEMENT 7500 MTS sable  EN VRAC';
+  let accostagePourStr = '';
   if (pda?.vessel?.cargo || pda?.vessel?.weightCargo) {
     const op = pda.vessel.cargoOperation === 'Loading' ? 'EMBARQUEMENT' : 'DEBARQUEMENT';
-    const qty = pda.vessel.weightCargo ? `${pda.vessel.weightCargo} MTS` : '7500 MTS';
-    const cargo = pda.vessel.cargo ? pda.vessel.cargo : 'sable';
-    accostagePourStr = `${op} ${qty} ${cargo}  EN VRAC`;
+    const qty = pda.vessel.weightCargo ? `${pda.vessel.weightCargo}` : '';
+    const cargo = pda.vessel.cargo || '';
+    accostagePourStr = `${op} ${qty} ${cargo}`.trim();
   }
 
   return {
@@ -428,16 +505,16 @@ export function createDefaultBerthingRequest(pda?: OfficialPdaModel): BerthingRe
     object: "OBJET : DEMANDE D'ACCOSTAGE",
     introText: 'Nous vous prions de bien vouloir faire accoster le navire :',
     vesselName: vesselStr,
-    desiredBerth: 'DISPONIBILITE DE POSTE A QUAI',
-    berthingDate: 'DISPONIBILITE DE POSTE A QUAI',
-    berthingTime: 'DISPONIBILITE DE POSTE A QUAI',
+    desiredBerth: '',
+    berthingDate: dateFormatted,
+    berthingTime: '',
     accostagePour: accostagePourStr,
-    loa: pda?.vessel?.loa || 116.23,
-    beam: pda?.vessel?.beam || 18.00,
-    maxDraft: pda?.vessel?.draft || pda?.vessel?.actualDraft || 7.60,
-    closingText: 'Avec nos remerciements anticipés.',
+    loa: pda?.vessel?.loa || 0,
+    beam: pda?.vessel?.beam || 0,
+    maxDraft: pda?.vessel?.draft || pda?.vessel?.actualDraft || 0,
+    closingText: "Dans l'attente de votre réponse, veuillez agréer, Monsieur le Commandant, l'assurance de notre considération distinguée.",
     agencySignOff: `SOCOTU ${cityName}`,
-    agentName: "L'Agent Maritime SOCOTU",
-    stampNote: 'Cachet & Signature'
+    agentName: '',
+    stampNote: ''
   };
 }

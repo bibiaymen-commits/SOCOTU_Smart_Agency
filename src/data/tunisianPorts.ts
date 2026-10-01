@@ -1,5 +1,5 @@
 import { OfficialPdaModel, PortId } from '../types/pda';
-import { calcVesselMetrics, calculatePortDues, calculatePortExpenses, getDefaultMooringLines } from '../utils/calculations';
+import { calcVesselMetrics, calculatePortDues, calculatePortExpenses, getDefaultMooringLines, getTodayIsoDate } from '../utils/calculations';
 
 export interface BranchInfo {
   id: PortId;
@@ -239,7 +239,7 @@ export function createDefaultOfficialPda(): OfficialPdaModel {
   return {
     id: 'pda-20260925165710',
     ref: 'PDA-20260925165710',
-    date: new Date().toISOString().slice(0, 10),
+    date: getTodayIsoDate(),
     port: 'Sousse',
     branchName: 'SOCIETE COMMERCIALE TUNISIENNE - Agence Sousse',
     vessel: {

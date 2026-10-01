@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { OfficialPdaModel, ArrivalDeclarationModel } from '../types/pda';
+import { OfficialPdaModel, ArrivalDeclarationModel, BerthingRequestModel } from '../types/pda';
 import { saveCurrentStatesToLocalStorage, AutoSaveMetadata } from '../utils/autoSaveStorage';
 
-const AUTOSAVE_INTERVAL_MS = 30000; // 30 seconds
+const DEBOUNCE_DELAY_MS = 350; // Save promptly after any user modification
+const AUTOSAVE_INTERVAL_MS = 15000; // Periodic safety sync every 15s
 
 export interface UseAutoSaveReturn {
   lastSavedAt: Date | null;
@@ -13,15 +14,18 @@ export interface UseAutoSaveReturn {
 
 export function useAutoSave(
   pda: OfficialPdaModel,
-  declaration: ArrivalDeclarationModel
+  declaration: ArrivalDeclarationModel,
+  berthing?: BerthingRequestModel,
+  onAutoSaved?: (meta: AutoSaveMetadata) => void
 ): UseAutoSaveReturn {
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(() => new Date());
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [metadata, setMetadata] = useState<AutoSaveMetadata | null>(null);
 
-  // Keep references to latest states to avoid stale closures in interval
+  const isFirstMount = useRef(true);
   const pdaRef = useRef(pda);
   const declarationRef = useRef(declaration);
+  const berthingRef = useRef(berthing);
 
   useEffect(() => {
     pdaRef.current = pda;
@@ -31,23 +35,50 @@ export function useAutoSave(
     declarationRef.current = declaration;
   }, [declaration]);
 
+  useEffect(() => {
+    berthingRef.current = berthing;
+  }, [berthing]);
+
   const executeSave = useCallback(() => {
     try {
       setIsSaving(true);
-      const meta = saveCurrentStatesToLocalStorage(pdaRef.current, declarationRef.current);
+      const meta = saveCurrentStatesToLocalStorage(
+        pdaRef.current,
+        declarationRef.current,
+        berthingRef.current
+      );
       setMetadata(meta);
       setLastSavedAt(new Date(meta.lastSavedAt));
+      if (onAutoSaved) {
+        onAutoSaved(meta);
+      }
     } catch (e) {
       console.error('AutoSave failed:', e);
     } finally {
-      // Keep saving indicator brief and smooth
       setTimeout(() => {
         setIsSaving(false);
-      }, 800);
+      }, 500);
     }
-  }, []);
+  }, [onAutoSaved]);
 
-  // Interval timer every 30 seconds
+  // INSTANT AUTO-SAVE ON ANY CHANGE (debounced 350ms)
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
+    setIsSaving(true);
+    const timer = setTimeout(() => {
+      executeSave();
+    }, DEBOUNCE_DELAY_MS);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [pda, declaration, berthing, executeSave]);
+
+  // Periodic background check every 15 seconds
   useEffect(() => {
     const timerId = setInterval(() => {
       executeSave();

@@ -1,5 +1,5 @@
 import { OfficialPdaModel } from '../types/pda';
-import { formatInt, formatNum } from './calculations';
+import { formatInt, formatNum, getTodayIsoDate, formatDisplayDate } from './calculations';
 import { SOCOTU_BRANCHES } from '../data/tunisianPorts';
 
 export function generateStandaloneHtml(pda: OfficialPdaModel): string {
@@ -410,7 +410,7 @@ export function generateStandaloneHtml(pda: OfficialPdaModel): string {
 
     <div class="sub-header-bar">
         <div class="doc-title">Proforma Disbursement Account</div>
-        <div class="doc-date"><span id="port_label_date">${pda.port}</span> on: <input type="date" id="doc_date_input" value="${pda.date}" style="width: 110px; border:none; background:#f1f5f9; text-align:center; font-weight:600; font-family:inherit; height:auto;"></div>
+        <div class="doc-date"><span id="port_label_date">${pda.port}</span> on: <span style="font-weight: 700; font-family: monospace; font-size: 11px;">${formatDisplayDate(pda.date || getTodayIsoDate())}</span></div>
     </div>
 
     <div class="meta-grid">
